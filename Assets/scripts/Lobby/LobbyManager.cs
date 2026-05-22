@@ -39,12 +39,16 @@ namespace FPSMultiplayer.Lobby
         {
             if (!HasStateAuthority) return;
 
+            string initialName = evt.PlayerId == Runner.LocalPlayer.PlayerId
+                ? PlayerPrefs.GetString("PlayerName", $"Player_{evt.PlayerId}")
+                : $"Player_{evt.PlayerId}";
+
             Players.Add(new LobbyPlayerEntry
             {
                 PlayerId  = evt.PlayerId,
                 IsReady   = false,
                 IsHost    = evt.PlayerId == Runner.LocalPlayer.PlayerId,
-                Name      = new NetworkString<_32>($"Player_{evt.PlayerId}")
+                Name      = new NetworkString<_32>(SanitizeName(initialName, evt.PlayerId))
             });
         }
 
@@ -77,6 +81,32 @@ namespace FPSMultiplayer.Lobby
             ServiceLocator.Get<Infrastructure.ISceneFlowManager>()?.LoadGameplayScene();
         }
 
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        public void RPC_SetPlayerName(int playerId, string name)
+        {
+            if (!HasStateAuthority) return;
+            if (!TryGetPlayerIndex(playerId, out int index)) return;
+
+            var oldEntry = Players[index];
+            var newEntry = oldEntry;
+            newEntry.Name = new NetworkString<_32>(SanitizeName(name, playerId));
+            ReplaceEntry(oldEntry, newEntry);
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        public void RPC_SetReady(int playerId, bool isReady)
+        {
+            if (!HasStateAuthority) return;
+            if (!TryGetPlayerIndex(playerId, out int index)) return;
+
+            var oldEntry = Players[index];
+            var newEntry = oldEntry;
+            newEntry.IsReady = isReady;
+            ReplaceEntry(oldEntry, newEntry);
+
+            EventBus.Publish(new PlayerReadyChanged { PlayerId = playerId, IsReady = isReady });
+        }
+
         [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
         public void RPC_KickPlayer(int playerId)
         {
@@ -106,6 +136,39 @@ namespace FPSMultiplayer.Lobby
             foreach (var p in Players)
                 if (!p.IsReady && !p.IsHost) return false;
             return true;
+        }
+
+        private bool TryGetPlayerIndex(int playerId, out int index)
+        {
+            for (int i = 0; i < Players.Count; i++)
+            {
+                if (Players[i].PlayerId == playerId)
+                {
+                    index = i;
+                    return true;
+                }
+            }
+
+            index = -1;
+            return false;
+        }
+
+        private void ReplaceEntry(LobbyPlayerEntry oldEntry, LobbyPlayerEntry newEntry)
+        {
+            Players.Remove(oldEntry);
+            Players.Add(newEntry);
+        }
+
+        private static string SanitizeName(string name, int playerId)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return $"Player_{playerId}";
+
+            name = name.Trim();
+            if (name.Length > 32)
+                name = name.Substring(0, 32);
+
+            return name;
         }
     }
 

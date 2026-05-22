@@ -462,6 +462,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FPSMultiplayer.Infrastructure.Bootstrap
   _mainMenuScene: MainMenu
+  _runnerPrefab: {fileID: 8091544567410228948, guid: abdbb55bdf9e85446a64295b5e034346, type: 3}
 --- !u!4 &1919537235
 Transform:
   m_ObjectHideFlags: 0

@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Fusion;
 using Fusion.Sockets;
 using FPSMultiplayer.Core;
@@ -27,19 +28,31 @@ namespace FPSMultiplayer.Networking
         public NetworkRunner Runner { get; private set; }
         public bool IsHost => Runner != null && Runner.IsServer;
 
+        public void Configure(NetworkRunner runnerPrefab, NetworkSceneManagerDefault sceneManager = null)
+        {
+            _runnerPrefab = runnerPrefab;
+            if (sceneManager != null)
+                _sceneManager = sceneManager;
+        }
+
         // ─── Crear sala ───────────────────────────────────────────────────────
         public async Task CreateRoom(string roomName, int maxPlayers = 8)
         {
+            if (!EnsureRunnerPrefab()) return;
+            if (!TryGetActiveSceneRef(out var sceneRef)) return;
+
             Runner = Instantiate(_runnerPrefab);
             Runner.AddCallbacks(this);
+
+            var sceneManager = ResolveSceneManager();
 
             var result = await Runner.StartGame(new StartGameArgs
             {
                 GameMode       = GameMode.Host,           // Player Host topology
                 SessionName    = roomName,
                 PlayerCount    = maxPlayers,
-                SceneManager   = _sceneManager,
-                Scene          = SceneRef.None,           // Seguimos en la escena actual
+                SceneManager   = sceneManager,
+                Scene          = sceneRef,
             });
 
             if (!result.Ok)
@@ -49,14 +62,20 @@ namespace FPSMultiplayer.Networking
         // ─── Unirse a sala ────────────────────────────────────────────────────
         public async Task JoinRoom(string roomName)
         {
+            if (!EnsureRunnerPrefab()) return;
+            if (!TryGetActiveSceneRef(out var sceneRef)) return;
+
             Runner = Instantiate(_runnerPrefab);
             Runner.AddCallbacks(this);
+
+            var sceneManager = ResolveSceneManager();
 
             var result = await Runner.StartGame(new StartGameArgs
             {
                 GameMode     = GameMode.Client,
                 SessionName  = roomName,
-                SceneManager = _sceneManager,
+                SceneManager = sceneManager,
+                Scene        = sceneRef,
             });
 
             if (!result.Ok)
@@ -78,8 +97,8 @@ namespace FPSMultiplayer.Networking
             // Solo el host spawnea jugadores
             if (runner.IsServer)
             {
-                var spawner = ServiceLocator.Get<IPlayerSpawner>();
-                spawner?.SpawnPlayer(runner, player);
+                if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
+                    spawner.SpawnPlayer(runner, player);
             }
         }
 
@@ -90,8 +109,8 @@ namespace FPSMultiplayer.Networking
 
             if (runner.IsServer)
             {
-                var spawner = ServiceLocator.Get<IPlayerSpawner>();
-                spawner?.DespawnPlayer(runner, player);
+                if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
+                    spawner.DespawnPlayer(runner, player);
             }
         }
 
@@ -118,5 +137,48 @@ namespace FPSMultiplayer.Networking
         public void OnSceneLoadStart(NetworkRunner runner) { }
         public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
+
+        private bool EnsureRunnerPrefab()
+        {
+            if (_runnerPrefab != null) return true;
+
+            Debug.LogError("[SessionManager] Runner Prefab not assigned. Assign it in Bootstrap or via inspector.");
+            return false;
+        }
+
+        private NetworkSceneManagerDefault ResolveSceneManager()
+        {
+            if (_sceneManager != null) return _sceneManager;
+
+            if (Runner != null)
+            {
+                _sceneManager = Runner.GetComponent<NetworkSceneManagerDefault>();
+                if (_sceneManager == null)
+                    _sceneManager = Runner.gameObject.AddComponent<NetworkSceneManagerDefault>();
+            }
+
+            return _sceneManager;
+        }
+
+        private static bool TryGetActiveSceneRef(out SceneRef sceneRef)
+        {
+            sceneRef = default;
+            var activeScene = SceneManager.GetActiveScene();
+
+            if (!activeScene.IsValid())
+            {
+                Debug.LogError("[SessionManager] Active scene is invalid.");
+                return false;
+            }
+
+            if (activeScene.buildIndex < 0 || activeScene.buildIndex >= SceneManager.sceneCountInBuildSettings)
+            {
+                Debug.LogError("[SessionManager] Active scene is not in Build Settings.");
+                return false;
+            }
+
+            sceneRef = SceneRef.FromIndex(activeScene.buildIndex);
+            return true;
+        }
     }
 }

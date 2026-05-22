@@ -1,4 +1,7 @@
+using System;
+using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Fusion;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Networking;
@@ -18,6 +21,11 @@ namespace FPSMultiplayer.Infrastructure
         [SerializeField] private SceneReference _lobbyScene;
         [SerializeField] private SceneReference _gameplayScene;
         [SerializeField] private SceneReference _mainMenuScene;
+
+        [Header("Fallback Names")]
+        [SerializeField] private string _lobbySceneName = GameConstants.Scene.Lobby;
+        [SerializeField] private string _gameplaySceneName = GameConstants.Scene.Gameplay;
+        [SerializeField] private string _mainMenuSceneName = GameConstants.Scene.MainMenu;
 
         private NetworkRunner _runner;
 
@@ -45,22 +53,83 @@ namespace FPSMultiplayer.Infrastructure
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
             if (_runner == null || !_runner.IsServer) return;
-            _runner.LoadScene(_gameplayScene);
+            var sceneRef = ResolveSceneRef(_gameplayScene, _gameplaySceneName);
+            if (sceneRef == default) return;
+            _runner.LoadScene(sceneRef);
         }
 
         public void LoadLobbyScene()
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
             if (_runner != null && _runner.IsServer)
-                _runner.LoadScene(_lobbyScene);
+            {
+                var sceneRef = ResolveSceneRef(_lobbyScene, _lobbySceneName);
+                if (sceneRef == default) return;
+                _runner.LoadScene(sceneRef);
+            }
         }
 
         public void LoadMainMenu()
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
             _runner?.Shutdown();
-            UnityEngine.SceneManagement.SceneManager.LoadScene(
-                UnityEngine.SceneManagement.SceneManager.GetSceneByBuildIndex(0).name);
+            if (!TryLoadUnityScene(_mainMenuScene, _mainMenuSceneName))
+            {
+                SceneManager.LoadScene(SceneManager.GetSceneByBuildIndex(0).name);
+            }
+        }
+
+        private SceneRef ResolveSceneRef(SceneReference reference, string fallbackName)
+        {
+            if (reference != null)
+            {
+                var sceneRef = reference.ToSceneRef();
+                if (sceneRef != default)
+                    return sceneRef;
+            }
+
+            if (TryGetSceneRefByName(fallbackName, out var fallbackRef))
+                return fallbackRef;
+
+            Debug.LogError($"[SceneFlowManager] Scene '{fallbackName}' is invalid or not in Build Settings.");
+            return default;
+        }
+
+        private static bool TryGetSceneRefByName(string sceneName, out SceneRef sceneRef)
+        {
+            sceneRef = default;
+            if (string.IsNullOrWhiteSpace(sceneName)) return false;
+
+            int count = SceneManager.sceneCountInBuildSettings;
+            for (int i = 0; i < count; i++)
+            {
+                string path = SceneUtility.GetScenePathByBuildIndex(i);
+                string name = Path.GetFileNameWithoutExtension(path);
+                if (string.Equals(name, sceneName, StringComparison.OrdinalIgnoreCase))
+                {
+                    sceneRef = SceneRef.FromIndex(i);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryLoadUnityScene(SceneReference reference, string fallbackName)
+        {
+            string sceneName = null;
+
+            if (reference != null && !string.IsNullOrEmpty(reference.ScenePath))
+                sceneName = Path.GetFileNameWithoutExtension(reference.ScenePath);
+
+            if (string.IsNullOrWhiteSpace(sceneName))
+                sceneName = fallbackName;
+
+            if (string.IsNullOrWhiteSpace(sceneName))
+                return false;
+
+            SceneManager.LoadScene(sceneName);
+            return true;
         }
     }
 }

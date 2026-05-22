@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Fusion;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Networking;
 using FPSMultiplayer.Infrastructure;
@@ -11,6 +12,9 @@ namespace FPSMultiplayer.Infrastructure
         [Header("Scene Names")]
         [SerializeField] private string _mainMenuScene = "MainMenu";
 
+        [Header("Networking")]
+        [SerializeField] private NetworkRunner _runnerPrefab;
+
         private void Awake()
         {
             // Orden de inicialización importa: primero logger, luego servicios de red.
@@ -18,6 +22,7 @@ namespace FPSMultiplayer.Infrastructure
             ServiceLocator.Register(logger);
 
             var sessionManager = new GameObject("SessionManager").AddComponent<SessionManager>();
+            sessionManager.Configure(_runnerPrefab);
             DontDestroyOnLoad(sessionManager.gameObject);
             ServiceLocator.Register<ISessionManager>(sessionManager);
 
