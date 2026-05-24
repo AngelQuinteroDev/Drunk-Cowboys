@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class WeaponSystem : MonoBehaviour
 {
@@ -10,6 +11,10 @@ public class WeaponSystem : MonoBehaviour
 
     [Header("Bullet")]
     [SerializeField] private GameObject bulletPrefab;
+
+    [Header("Shot Delay (sync with animation)")]
+    [Tooltip("Segundos de espera entre que el jugador dispara y sale la bala. Ajusta para que coincida con el frame del revolver en la animacion.")]
+    [SerializeField] private float shotDelay = 0.08f;
 
     [Header("Spread")]
     [SerializeField] private float baseSpread = 1.5f;
@@ -28,6 +33,7 @@ public class WeaponSystem : MonoBehaviour
     [SerializeField] private Transform muzzlePoint;
     [SerializeField] private Transform weaponVisual;
     [SerializeField] private Transform aimTarget;
+    [SerializeField] private MuzzleSmoke muzzleSmoke;
 
     public int CurrentAmmo { get; private set; }
     public bool IsReloading { get; private set; }
@@ -36,7 +42,6 @@ public class WeaponSystem : MonoBehaviour
     private float _nextFireTime;
     private Vector3 _defaultWeaponPos;
     private DrunkSystem _drunk;
-    private ParticleSystem _smokePS;
 
     private void Awake()
     {
@@ -46,59 +51,8 @@ public class WeaponSystem : MonoBehaviour
         if (weaponVisual != null)
             _defaultWeaponPos = weaponVisual.localPosition;
 
-        SetupMuzzleSmoke();
-    }
-
-    private void SetupMuzzleSmoke()
-    {
-        if (muzzlePoint == null) return;
-
-        _smokePS = muzzlePoint.GetComponent<ParticleSystem>();
-
-        if (_smokePS == null)
-            _smokePS = muzzlePoint.gameObject.AddComponent<ParticleSystem>();
-
-        var main = _smokePS.main;
-        main.loop = false;
-        main.playOnAwake = false;
-        main.startLifetime = 0.4f;
-        main.startSpeed = 2f;
-        main.startSize = 0.06f;
-        main.startColor = new Color(0.85f, 0.85f, 0.85f, 0.7f);
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 50;
-
-        var emission = _smokePS.emission;
-        emission.enabled = false;
-
-        var shape = _smokePS.shape;
-        shape.enabled = true;
-        shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 15f;
-        shape.radius = 0.01f;
-
-        var sol = _smokePS.sizeOverLifetime;
-        sol.enabled = true;
-        sol.size = new ParticleSystem.MinMaxCurve(1f,
-            new AnimationCurve(
-                new Keyframe(0f, 0.3f),
-                new Keyframe(1f, 1.2f)
-            ));
-
-        var col = _smokePS.colorOverLifetime;
-        col.enabled = true;
-        Gradient grad = new Gradient();
-        grad.SetKeys(
-            new GradientColorKey[] {
-                new GradientColorKey(Color.white,                  0f),
-                new GradientColorKey(new Color(0.6f, 0.6f, 0.6f), 1f)
-            },
-            new GradientAlphaKey[] {
-                new GradientAlphaKey(0.7f, 0f),
-                new GradientAlphaKey(0f,   1f)
-            }
-        );
-        col.color = grad;
+        if (muzzleSmoke == null)
+            muzzleSmoke = GetComponentInChildren<MuzzleSmoke>();
     }
 
     private void Update()
@@ -116,7 +70,7 @@ public class WeaponSystem : MonoBehaviour
             return;
         }
 
-        Shoot();
+        StartCoroutine(ShootWithDelay());
     }
 
     public void TryReload()
@@ -125,21 +79,22 @@ public class WeaponSystem : MonoBehaviour
             StartCoroutine(ReloadRoutine());
     }
 
-    private void Shoot()
+    private IEnumerator ShootWithDelay()
     {
         CurrentAmmo--;
         _nextFireTime = Time.time + 1f / fireRate;
+        ApplyRecoil();
 
-        Vector3 origin = muzzlePoint != null
-            ? muzzlePoint.position
-            : transform.position;
+        yield return new WaitForSeconds(shotDelay);
 
+        Vector3 origin = muzzlePoint != null ? muzzlePoint.position : transform.position;
         Vector3 direction = GetShootDirection(origin);
         direction = ApplySpread(direction);
 
         SpawnBullet(origin, direction);
-        ApplyRecoil();
-        EmitSmoke();
+
+        if (muzzleSmoke != null)
+            muzzleSmoke.Emit();
 
         if (CurrentAmmo <= 0)
             StartCoroutine(ReloadRoutine());
@@ -162,20 +117,13 @@ public class WeaponSystem : MonoBehaviour
 
         GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.LookRotation(direction));
 
-        Bullet bulletScript = bullet.GetComponent<Bullet>();
-        if (bulletScript != null)
-            bulletScript.SetDamage(CalculateDamage());
+        Bullet b = bullet.GetComponent<Bullet>();
+        if (b != null) b.SetDamage(CalculateDamage());
 
         Collider bulletCol = bullet.GetComponent<Collider>();
         Collider playerCol = GetComponentInParent<Collider>();
         if (bulletCol != null && playerCol != null)
             Physics.IgnoreCollision(bulletCol, playerCol);
-    }
-
-    private void EmitSmoke()
-    {
-        if (_smokePS != null)
-            _smokePS.Emit(8);
     }
 
     private float CalculateDamage()
@@ -192,7 +140,7 @@ public class WeaponSystem : MonoBehaviour
         return direction.normalized;
     }
 
-    private System.Collections.IEnumerator ReloadRoutine()
+    private IEnumerator ReloadRoutine()
     {
         IsReloading = true;
         float reloadTime = _drunk != null
