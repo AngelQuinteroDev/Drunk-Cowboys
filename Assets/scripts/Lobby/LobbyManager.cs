@@ -1,5 +1,3 @@
-// Administra el estado del lobby. NetworkBehaviour porque vive en un NetworkObject.
-// El host tiene StateAuthority y escribe. Los clientes leen y reaccionan.
 using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
@@ -10,7 +8,6 @@ namespace FPSMultiplayer.Lobby
 {
     public class LobbyManager : NetworkBehaviour
     {
-        // Lista replicada de datos de lobby. Fusion replica IList<NetworkStruct> automáticamente.
         [Networked, Capacity(16)]
         public NetworkLinkedList<LobbyPlayerEntry> Players { get; }
 
@@ -66,7 +63,6 @@ namespace FPSMultiplayer.Lobby
             }
         }
 
-        // ─── Host Controls ────────────────────────────────────────────────────
 
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
         public void RPC_StartMatch()
@@ -77,7 +73,6 @@ namespace FPSMultiplayer.Lobby
             MatchStarted = true;
             EventBus.Publish(new MatchStartRequested());
 
-            // Trigger scene change
             ServiceLocator.Get<Infrastructure.ISceneFlowManager>()?.LoadGameplayScene();
         }
 
@@ -172,7 +167,6 @@ namespace FPSMultiplayer.Lobby
         }
     }
 
-    // Struct de datos por jugador en lobby. NetworkStruct para poder usarlo en listas replicadas.
     public struct LobbyPlayerEntry : INetworkStruct
     {
         public int                  PlayerId;
@@ -181,7 +175,6 @@ namespace FPSMultiplayer.Lobby
         public NetworkString<_32>   Name;
     }
 
-    // Evento interno para actualizar la UI del lobby
     public readonly struct LobbyListUpdated { }
 
 }

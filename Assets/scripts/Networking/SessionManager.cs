@@ -1,5 +1,3 @@
-// Corazón del networking. Crea/une salas. Expone el NetworkRunner.
-// Implementa INetworkRunnerCallbacks para reaccionar a eventos de Fusion.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -35,7 +33,6 @@ namespace FPSMultiplayer.Networking
                 _sceneManager = sceneManager;
         }
 
-        // ─── Crear sala ───────────────────────────────────────────────────────
         public async Task CreateRoom(string roomName, int maxPlayers = 8)
         {
             if (!EnsureRunnerPrefab()) return;
@@ -48,7 +45,7 @@ namespace FPSMultiplayer.Networking
 
             var result = await Runner.StartGame(new StartGameArgs
             {
-                GameMode       = GameMode.Host,           // Player Host topology
+                GameMode       = GameMode.Host,          
                 SessionName    = roomName,
                 PlayerCount    = maxPlayers,
                 SceneManager   = sceneManager,
@@ -59,7 +56,6 @@ namespace FPSMultiplayer.Networking
                 Debug.LogError($"[SessionManager] CreateRoom failed: {result.ShutdownReason}");
         }
 
-        // ─── Unirse a sala ────────────────────────────────────────────────────
         public async Task JoinRoom(string roomName)
         {
             if (!EnsureRunnerPrefab()) return;
@@ -88,13 +84,11 @@ namespace FPSMultiplayer.Networking
                 await Runner.Shutdown();
         }
 
-        // ─── INetworkRunnerCallbacks ──────────────────────────────────────────
         public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
         {
             Debug.Log($"[SessionManager] Player joined: {player}");
             EventBus.Publish(new PlayerJoinedEvent { PlayerId = player.PlayerId });
 
-            // Solo el host spawnea jugadores
             if (runner.IsServer)
             {
                 if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
@@ -117,7 +111,6 @@ namespace FPSMultiplayer.Networking
         public void OnShutdown(NetworkRunner runner, ShutdownReason reason)
         {
             Debug.Log($"[SessionManager] Shutdown: {reason}");
-            // Publicar evento para que UI y managers limpien su estado
             EventBus.Publish(new Core.Events.SceneChangeRequest { SceneName = Shared.GameConstants.Scene.MainMenu });
         }
 

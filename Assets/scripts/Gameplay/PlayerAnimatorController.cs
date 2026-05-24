@@ -1,5 +1,3 @@
-// Maneja el Animator local. NUNCA sincroniza parámetros por red directamente.
-// Lee el estado Networked del PlayerNetworkController y lo aplica localmente.
 using UnityEngine;
 
 namespace FPSMultiplayer.Gameplay
@@ -9,7 +7,6 @@ namespace FPSMultiplayer.Gameplay
     {
         private Animator _animator;
 
-        // Hashes para performance — evita string lookups en cada frame
         private static readonly int _speedHash      = Animator.StringToHash("Speed");
         private static readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
         private static readonly int _isRunningHash  = Animator.StringToHash("IsRunning");
@@ -19,7 +16,6 @@ namespace FPSMultiplayer.Gameplay
 
         private void Awake() => _animator = GetComponent<Animator>();
 
-        // Llamado desde PlayerNetworkController.Render()
         public void UpdateAnimatorState(Vector3 velocity, bool isGrounded, bool isRunning, bool isCrouching)
         {
             float speed = new Vector2(velocity.x, velocity.z).magnitude;
@@ -29,7 +25,6 @@ namespace FPSMultiplayer.Gameplay
             _animator.SetBool (_isRunningHash,  isRunning);
             _animator.SetBool (_isCrouchHash,   isCrouching);
 
-            // Dirección relativa para blending trees 2D
             var localVel = transform.InverseTransformDirection(velocity);
             _animator.SetFloat(_velocityXHash, localVel.x, 0.1f, Time.deltaTime);
             _animator.SetFloat(_velocityZHash, localVel.z, 0.1f, Time.deltaTime);

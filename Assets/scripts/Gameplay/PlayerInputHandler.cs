@@ -1,5 +1,3 @@
-// Recolecta input local y lo entrega a Fusion via INetworkInput.
-// Separa completamente el input del movimiento — patrón correcto para prediction.
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Fusion;
@@ -8,7 +6,6 @@ using FPSMultiplayer.Shared;
 
 namespace FPSMultiplayer.Gameplay
 {
-    // Estructura de input — debe ser un NetworkInput struct
     public struct PlayerInputData : INetworkInput
     {
         public Vector2 MoveDirection;
@@ -22,8 +19,6 @@ namespace FPSMultiplayer.Gameplay
         public NetworkBool Interact;
     }
 
-    // Este componente sólo vive en el objeto local del jugador.
-    // OnInput() es el callback correcto — nunca recopilar input en FixedUpdateNetwork().
     public class PlayerInputHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         [SerializeField] private InputActionAsset _inputAsset;
@@ -82,7 +77,6 @@ namespace FPSMultiplayer.Gameplay
             _jumpPending = true;
         }
 
-        // Fusion llama esto una vez por tick para recopilar el input del jugador local
         public void OnInput(NetworkRunner runner, NetworkInput input)
         {
             if (_playerMap == null) return;
@@ -100,7 +94,7 @@ namespace FPSMultiplayer.Gameplay
                 Interact       = _interactAction.IsPressed(),
             };
 
-            _jumpPending = false;  // Consume el evento
+            _jumpPending = false;  
             _lookDelta   = Vector2.zero;
 
             input.Set(data);
@@ -108,12 +102,10 @@ namespace FPSMultiplayer.Gameplay
 
         private void Update()
         {
-            // El mouse delta se acumula aquí para no perderlo entre ticks de Fusion
             if (_lookAction != null)
                 _lookDelta += _lookAction.ReadValue<Vector2>();
         }
 
-        // Stubs requeridos por INetworkRunnerCallbacks
         public void OnPlayerJoined(NetworkRunner r, PlayerRef p) { }
         public void OnPlayerLeft(NetworkRunner r, PlayerRef p) { }
         public void OnShutdown(NetworkRunner r, ShutdownReason reason) { }

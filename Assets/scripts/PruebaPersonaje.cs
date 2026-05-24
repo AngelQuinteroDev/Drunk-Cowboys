@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Mueve el objeto hacia adelante, atrás y a los lados
-/// usando las teclas WASD o las flechas del teclado.
-/// </summary>
 public class PruebaPersonaje : MonoBehaviour
 {
     [Header("Configuración de movimiento")]
@@ -34,23 +30,15 @@ public class PruebaPersonaje : MonoBehaviour
             MoverConRigidbody();
     }
 
-    /// <summary>
-    /// Movimiento directo sobre el Transform (sin físicas).
-    /// Ideal para objetos simples, cámaras o prototipos.
-    /// </summary>
     private void MoverConTransform()
     {
-        float horizontal = Input.GetAxis("Horizontal"); // A/D o ←/→
-        float vertical   = Input.GetAxis("Vertical");   // W/S o ↑/↓
+        float horizontal = Input.GetAxis("Horizontal"); 
+        float vertical   = Input.GetAxis("Vertical");  
 
         Vector3 direccion = new Vector3(horizontal, 0f, vertical).normalized;
         transform.Translate(direccion * velocidad * Time.deltaTime, Space.World);
     }
 
-    /// <summary>
-    /// Movimiento mediante Rigidbody (con físicas).
-    /// Ideal cuando el objeto necesita colisiones realistas.
-    /// </summary>
     private void MoverConRigidbody()
     {
         float horizontal = Input.GetAxis("Horizontal");

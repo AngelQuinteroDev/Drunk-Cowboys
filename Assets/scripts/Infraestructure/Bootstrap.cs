@@ -17,7 +17,6 @@ namespace FPSMultiplayer.Infrastructure
 
         private void Awake()
         {
-            // Orden de inicialización importa: primero logger, luego servicios de red.
             var logger = new GameLogger();
             ServiceLocator.Register(logger);
 

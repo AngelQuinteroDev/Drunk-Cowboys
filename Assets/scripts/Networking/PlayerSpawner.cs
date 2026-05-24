@@ -1,5 +1,3 @@
-// El host spawnea NetworkObjects para cada jugador.
-// Mapea PlayerRef → NetworkObject para despachar correctamente.
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
@@ -35,7 +33,6 @@ namespace FPSMultiplayer.Networking
 
         public void SpawnPlayer(NetworkRunner runner, PlayerRef player)
         {
-            // Solo ejecuta en el host (State Authority)
             if (!runner.IsServer) return;
             if (_spawnedPlayers.ContainsKey(player)) return;
 
@@ -44,7 +41,7 @@ namespace FPSMultiplayer.Networking
                 _playerPrefab,
                 spawnPoint.position,
                 spawnPoint.rotation,
-                player  // Asigna InputAuthority al jugador que se conecta
+                player 
             );
 
             _spawnedPlayers[player] = networkPlayer;
@@ -74,7 +71,6 @@ namespace FPSMultiplayer.Networking
             if (_spawnPoints == null || _spawnPoints.Length == 0)
                 return transform;
 
-            // Distribución simple por índice; reemplaza con lógica de equipos cuando sea necesario
             int index = player.PlayerId % _spawnPoints.Length;
             return _spawnPoints[index];
         }
