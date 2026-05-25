@@ -16,7 +16,7 @@ namespace FPSMultiplayer.Networking
     public class PlayerSpawner : MonoBehaviour, IPlayerSpawner
     {
         [SerializeField] private NetworkObject _playerPrefab;
-        [SerializeField] private Transform[]   _spawnPoints;
+        [SerializeField] private Transform[] _spawnPoints;
 
         private readonly Dictionary<PlayerRef, NetworkObject> _spawnedPlayers = new();
 
@@ -38,11 +38,18 @@ namespace FPSMultiplayer.Networking
             if (_spawnedPlayers.ContainsKey(player)) return;
 
             var spawnPoint = GetSpawnPoint(player);
+
+            Quaternion spawnRotation = Quaternion.Euler(
+                0f,
+                spawnPoint.eulerAngles.y,
+                0f
+            );
+
             var networkPlayer = runner.Spawn(
                 _playerPrefab,
                 spawnPoint.position,
-                spawnPoint.rotation,
-                player 
+                spawnRotation,
+                player
             );
 
             _spawnedPlayers[player] = networkPlayer;
