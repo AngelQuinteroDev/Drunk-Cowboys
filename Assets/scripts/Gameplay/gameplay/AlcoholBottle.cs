@@ -8,10 +8,14 @@ namespace FPSMultiplayer.Gameplay
         [Header("Drunk")]
         [SerializeField] private float customDrunkAmount = 0f;
 
-        [Header("Floating Animation — local, no replicada")]
+        [Header("Floating Animation")]
         [SerializeField] private float rotationSpeed = 80f;
-        [SerializeField] private float floatHeight   = 0.25f;
-        [SerializeField] private float floatSpeed    = 2f;
+        [SerializeField] private float floatHeight = 0.25f;
+        [SerializeField] private float floatSpeed = 2f;
+
+        [Header("Audio")]
+        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private AudioClip drinkSound;
 
         private Vector3 _startPosition;
 
@@ -37,16 +41,24 @@ namespace FPSMultiplayer.Gameplay
         private void FloatBottle()
         {
             Vector3 pos = _startPosition;
-            pos.y += Mathf.Sin(Time.time * floatSpeed) * floatHeight;
+
+            pos.y +=
+                Mathf.Sin(Time.time * floatSpeed) * floatHeight;
+
             transform.position = pos;
         }
+
         private void OnTriggerEnter(Collider other)
         {
-            // FUSION 2: HasStateAuthority en vez de NetworkRunner.ActiveRunner
             if (!HasStateAuthority) return;
 
-            var drunk = other.GetComponentInParent<DrunkSystem>();
+            var drunk =
+                other.GetComponentInParent<DrunkSystem>();
+
             if (drunk == null) return;
+
+            if (audioSource != null && drinkSound != null)
+                audioSource.PlayOneShot(drinkSound);
 
             if (customDrunkAmount > 0f)
                 drunk.AddDrunkLevel(customDrunkAmount);

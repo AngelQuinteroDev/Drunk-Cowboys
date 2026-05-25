@@ -73,18 +73,24 @@ public class PlayerController : NetworkBehaviour
     public override void Spawned()
     {
         _ncc = GetComponent<NetworkCharacterController>();
-
         _health = GetComponent<HealthSystem>();
-
         _drunk = GetComponent<DrunkSystem>();
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
+        _verticalRotation = 0f;
+
         if (HasStateAuthority)
+        {
             Stamina = maxStamina;
+            LookPitch = 0f;
+        }
 
         _predictedStamina = maxStamina;
+
+        if (headPivot != null)
+            headPivot.localRotation = Quaternion.identity;
 
         if (HasInputAuthority)
         {
@@ -112,14 +118,10 @@ public class PlayerController : NetworkBehaviour
         if (virtualCamera == null)
             return;
 
-        _noise =
-            virtualCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
+        _noise = virtualCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
 
         if (_noise == null)
-        {
-            _noise =
-                virtualCamera.gameObject.AddComponent<CinemachineBasicMultiChannelPerlin>();
-        }
+            _noise = virtualCamera.gameObject.AddComponent<CinemachineBasicMultiChannelPerlin>();
 
         if (drunkNoiseProfile != null)
             _noise.NoiseProfile = drunkNoiseProfile;
@@ -166,22 +168,13 @@ public class PlayerController : NetworkBehaviour
         if (headPivot == null)
             return;
 
-        float mouseX =
-            lookDelta.x * mouseSensitivity * Runner.DeltaTime;
-
-        float mouseY =
-            lookDelta.y * mouseSensitivity * Runner.DeltaTime;
+        float mouseX = lookDelta.x * mouseSensitivity * Runner.DeltaTime;
+        float mouseY = lookDelta.y * mouseSensitivity * Runner.DeltaTime;
 
         transform.Rotate(Vector3.up * mouseX);
 
         _verticalRotation -= mouseY;
-
-        _verticalRotation = Mathf.Clamp(
-            _verticalRotation,
-            verticalLookMin,
-            verticalLookMax
-        );
-
+        _verticalRotation = Mathf.Clamp(_verticalRotation, verticalLookMin, verticalLookMax);
     }
 
     private void HandleMovement(PlayerInputData input)
@@ -214,14 +207,8 @@ public class PlayerController : NetworkBehaviour
             _predictedStamina = stamina;
         }
 
-        float drunkPenalty =
-            _drunk != null
-            ? _drunk.GetMovementPenalty()
-            : 1f;
-
-        float speed =
-            (isSprinting ? sprintSpeed : walkSpeed)
-            * drunkPenalty;
+        float drunkPenalty = _drunk != null ? _drunk.GetMovementPenalty() : 1f;
+        float speed = (isSprinting ? sprintSpeed : walkSpeed) * drunkPenalty;
 
         if (_ncc.Grounded && _velocity.y < 0f)
             _velocity.y = -2f;
@@ -230,7 +217,6 @@ public class PlayerController : NetworkBehaviour
             _velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
 
         _velocity.y += gravity * Runner.DeltaTime;
-
         _velocity.x = moveDir.x * speed;
         _velocity.z = moveDir.z * speed;
 
@@ -295,48 +281,17 @@ public class PlayerController : NetworkBehaviour
         if (animator == null)
             return;
 
-        bool isDrunk =
-            _drunk != null &&
-            _drunk.GetDrunkRatio() >= drunkThreshold;
-
-        bool isIdle =
-            !IsMoving &&
-            !IsShooting;
-
-        bool isJumping =
-            !IsGrounded;
+        bool isDrunk = _drunk != null && _drunk.GetDrunkRatio() >= drunkThreshold;
+        bool isIdle = !IsMoving && !IsShooting;
+        bool isJumping = !IsGrounded;
 
         animator.SetBool("isIdle", isIdle);
-
-        animator.SetBool(
-            "IsWalking",
-            IsMoving && !IsSprinting
-        );
-
-        animator.SetBool(
-            "IsRunning",
-            IsSprinting
-        );
-
-        animator.SetBool(
-            "IsShooting",
-            IsShooting
-        );
-
-        animator.SetBool(
-            "IsDrunk",
-            isDrunk
-        );
-
-        animator.SetBool(
-            "IsDead",
-            _health != null && !_health.IsAlive
-        );
-
-        animator.SetBool(
-            "IsJumping",
-            isJumping
-        );
+        animator.SetBool("IsWalking", IsMoving && !IsSprinting);
+        animator.SetBool("IsRunning", IsSprinting);
+        animator.SetBool("IsShooting", IsShooting);
+        animator.SetBool("IsDrunk", isDrunk);
+        animator.SetBool("IsDead", _health != null && !_health.IsAlive);
+        animator.SetBool("IsJumping", isJumping);
     }
 
     private void OnDeath()
@@ -364,29 +319,25 @@ public class PlayerController : NetworkBehaviour
         if (!HasInputAuthority || _noise == null || _drunk == null)
             return;
 
-        float ratio =
-            _drunk.GetDrunkRatio();
+        float ratio = _drunk.GetDrunkRatio();
 
-        _noise.AmplitudeGain =
-            Mathf.Lerp(
-                _noise.AmplitudeGain,
-                ratio * maxNoiseAmplitude,
-                Time.deltaTime * 2f
-            );
+        _noise.AmplitudeGain = Mathf.Lerp(
+            _noise.AmplitudeGain,
+            ratio * maxNoiseAmplitude,
+            Time.deltaTime * 2f
+        );
 
-        _noise.FrequencyGain =
-            Mathf.Lerp(
-                _noise.FrequencyGain,
-                ratio * maxNoiseFrequency,
-                Time.deltaTime * 2f
-            );
+        _noise.FrequencyGain = Mathf.Lerp(
+            _noise.FrequencyGain,
+            ratio * maxNoiseFrequency,
+            Time.deltaTime * 2f
+        );
     }
 
     public float CurrentStamina =>
         HasStateAuthority ? Stamina : (HasInputAuthority ? _predictedStamina : Stamina);
 
-    public float MaxStamina =>
-        maxStamina;
+    public float MaxStamina => maxStamina;
 
     private void UpdateLookVisuals()
     {

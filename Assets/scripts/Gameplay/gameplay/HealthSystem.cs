@@ -10,27 +10,31 @@ namespace FPSMultiplayer.Gameplay
     {
         [Header("Health")]
         [SerializeField] private float maxHealth = 100f;
-        [SerializeField] private bool  canRespawn  = true;
+        [SerializeField] private bool canRespawn = true;
         [SerializeField] private float respawnDelay = 3f;
 
         [Header("Drunk Damage Resistance")]
-        [SerializeField] private AnimationCurve resistanceCurve =
+        [SerializeField]
+        private AnimationCurve resistanceCurve =
             AnimationCurve.Linear(0f, 1f, 1f, 0.35f);
 
+        [Header("Audio")]
+        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private AudioClip damageSound;
+
         public UnityEvent<float, float> OnHealthChanged;
-        public UnityEvent               OnDeath;
-        public UnityEvent               OnRespawn;
+        public UnityEvent OnDeath;
+        public UnityEvent OnRespawn;
 
-        [Networked] public float      CurrentHealth { get; private set; }
-        [Networked] public bool       IsAlive       { get; private set; }
-        [Networked] private TickTimer RespawnTimer  { get; set; }
+        [Networked] public float CurrentHealth { get; private set; }
+        [Networked] public bool IsAlive { get; private set; }
+        [Networked] private TickTimer RespawnTimer { get; set; }
 
-        private DrunkSystem    _drunk;
+        private DrunkSystem _drunk;
         private ChangeDetector _changes;
 
-        // Copia local para detectar transiciones en Render()
         private float _lastHealth;
-        private bool  _lastAlive;
+        private bool _lastAlive;
 
         public override void Spawned()
         {
@@ -39,19 +43,18 @@ namespace FPSMultiplayer.Gameplay
             if (HasStateAuthority)
             {
                 CurrentHealth = maxHealth;
-                IsAlive       = true;
+                IsAlive = true;
             }
 
-            _changes    = GetChangeDetector(ChangeDetector.Source.SimulationState);
+            _changes = GetChangeDetector(ChangeDetector.Source.SimulationState);
             _lastHealth = CurrentHealth;
-            _lastAlive  = IsAlive;
+            _lastAlive = IsAlive;
         }
 
         public override void FixedUpdateNetwork()
         {
             if (!HasStateAuthority) return;
 
-            // Comprobar timer de respawn
             if (!IsAlive && canRespawn && RespawnTimer.Expired(Runner))
                 ForceRespawn();
         }
@@ -70,8 +73,10 @@ namespace FPSMultiplayer.Gameplay
                     case nameof(IsAlive):
                         if (!IsAlive && _lastAlive)
                             OnDeath?.Invoke();
+
                         if (IsAlive && !_lastAlive)
                             OnRespawn?.Invoke();
+
                         _lastAlive = IsAlive;
                         break;
                 }
@@ -85,10 +90,16 @@ namespace FPSMultiplayer.Gameplay
         {
             if (!HasStateAuthority || !IsAlive) return;
 
-            float mult   = _drunk != null ? resistanceCurve.Evaluate(_drunk.GetDrunkRatio()) : 1f;
+            float mult = _drunk != null
+                ? resistanceCurve.Evaluate(_drunk.GetDrunkRatio())
+                : 1f;
+
             float damage = rawDamage * mult;
 
             CurrentHealth = Mathf.Clamp(CurrentHealth - damage, 0f, maxHealth);
+
+            if (audioSource != null && damageSound != null)
+                audioSource.PlayOneShot(damageSound);
 
             if (CurrentHealth <= 0f)
                 HandleDeath(instigator);
@@ -97,6 +108,7 @@ namespace FPSMultiplayer.Gameplay
         public void Heal(float amount)
         {
             if (!HasStateAuthority || !IsAlive) return;
+
             CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, maxHealth);
         }
 
@@ -116,9 +128,12 @@ namespace FPSMultiplayer.Gameplay
             if (instigator != PlayerRef.None)
             {
                 var killerObj = Runner.GetPlayerObject(instigator);
+
                 if (killerObj != null &&
                     killerObj.TryGetComponent<PlayerController>(out var killer))
+                {
                     killer.Kills++;
+                }
             }
 
             if (Object != null && Object.InputAuthority != PlayerRef.None)
@@ -126,7 +141,9 @@ namespace FPSMultiplayer.Gameplay
                 EventBus.Publish(new PlayerDied
                 {
                     PlayerId = Object.InputAuthority.PlayerId,
-                    KillerId = instigator != PlayerRef.None ? instigator.PlayerId : -1
+                    KillerId = instigator != PlayerRef.None
+                        ? instigator.PlayerId
+                        : -1
                 });
             }
         }
@@ -136,8 +153,8 @@ namespace FPSMultiplayer.Gameplay
             if (!HasStateAuthority) return;
 
             CurrentHealth = maxHealth;
-            IsAlive       = true;
-            RespawnTimer  = default;
+            IsAlive = true;
+            RespawnTimer = default;
         }
     }
 }

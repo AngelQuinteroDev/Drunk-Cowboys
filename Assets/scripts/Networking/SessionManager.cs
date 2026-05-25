@@ -46,11 +46,11 @@ namespace FPSMultiplayer.Networking
 
             var result = await Runner.StartGame(new StartGameArgs
             {
-                GameMode       = GameMode.Host,          
-                SessionName    = roomName,
-                PlayerCount    = maxPlayers,
-                SceneManager   = sceneManager,
-                Scene          = sceneRef,
+                GameMode = GameMode.Host,
+                SessionName = roomName,
+                PlayerCount = maxPlayers,
+                SceneManager = sceneManager,
+                Scene = sceneRef,
             });
 
             if (!result.Ok)
@@ -69,10 +69,10 @@ namespace FPSMultiplayer.Networking
 
             var result = await Runner.StartGame(new StartGameArgs
             {
-                GameMode     = GameMode.Client,
-                SessionName  = roomName,
+                GameMode = GameMode.Client,
+                SessionName = roomName,
                 SceneManager = sceneManager,
-                Scene        = sceneRef,
+                Scene = sceneRef,
             });
 
             if (!result.Ok)
@@ -129,6 +129,7 @@ namespace FPSMultiplayer.Networking
         }
 
         public void OnConnectedToServer(NetworkRunner runner) { }
+
         public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
         {
             Debug.Log($"[SessionManager] DisconnectedFromServer: {reason}");
@@ -138,6 +139,7 @@ namespace FPSMultiplayer.Networking
         {
             Debug.Log($"[SessionManager] ConnectFailed: {reason}");
         }
+
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
@@ -147,15 +149,13 @@ namespace FPSMultiplayer.Networking
         public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
         public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
         public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-        
         public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
 
         private bool EnsureRunnerPrefab()
         {
             if (_runnerPrefab != null) return true;
-
-            Debug.LogError("[SessionManager] Runner Prefab not assigned. Assign it in Bootstrap or via inspector.");
+            Debug.LogError("[SessionManager] Runner Prefab not assigned.");
             return false;
         }
 
