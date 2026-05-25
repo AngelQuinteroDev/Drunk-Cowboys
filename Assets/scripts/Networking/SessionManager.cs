@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -114,9 +115,29 @@ namespace FPSMultiplayer.Networking
             EventBus.Publish(new Core.Events.SceneChangeRequest { SceneName = Shared.GameConstants.Scene.MainMenu });
         }
 
+        public void OnSceneLoadDone(NetworkRunner runner)
+        {
+            Debug.Log($"[SessionManager] OnSceneLoadDone. Runner.IsServer={runner.IsServer}, ActivePlayers={runner.ActivePlayers.Count()}");
+            LogLoadedScenes();
+            EnsureNonMenuActiveScene(runner);
+            UnloadSceneIfLoaded(Shared.GameConstants.Scene.MainMenu);
+        }
+
+        public void OnSceneLoadStart(NetworkRunner runner)
+        {
+            Debug.Log($"[SessionManager] OnSceneLoadStart. Runner.IsServer={runner.IsServer}");
+        }
+
         public void OnConnectedToServer(NetworkRunner runner) { }
-        public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
-        public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
+        public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
+        {
+            Debug.Log($"[SessionManager] DisconnectedFromServer: {reason}");
+        }
+
+        public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason)
+        {
+            Debug.Log($"[SessionManager] ConnectFailed: {reason}");
+        }
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
@@ -126,8 +147,7 @@ namespace FPSMultiplayer.Networking
         public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
         public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
         public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-        public void OnSceneLoadDone(NetworkRunner runner) { }
-        public void OnSceneLoadStart(NetworkRunner runner) { }
+        
         public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
 
@@ -172,6 +192,73 @@ namespace FPSMultiplayer.Networking
 
             sceneRef = SceneRef.FromIndex(activeScene.buildIndex);
             return true;
+        }
+
+        private static void LogLoadedScenes()
+        {
+            var active = SceneManager.GetActiveScene();
+            var loaded = new List<string>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.IsValid() && scene.isLoaded)
+                    loaded.Add(scene.name);
+            }
+
+            Debug.Log($"[SessionManager] ActiveScene={active.name}, LoadedScenes=[{string.Join(", ", loaded)}]");
+        }
+
+        private static void UnloadSceneIfLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName)) return;
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded) continue;
+
+                if (scene.name == sceneName)
+                {
+                    SceneManager.UnloadSceneAsync(scene);
+                    break;
+                }
+            }
+        }
+
+        private static void EnsureNonMenuActiveScene(NetworkRunner runner)
+        {
+            var active = SceneManager.GetActiveScene();
+            if (active.IsValid() && active.name != Shared.GameConstants.Scene.MainMenu)
+                return;
+
+            var sceneManager = runner != null ? runner.SceneManager as NetworkSceneManagerDefault : null;
+            if (sceneManager != null)
+            {
+                var multiPeerScene = sceneManager.MultiPeerScene;
+                if (multiPeerScene.IsValid() && multiPeerScene.isLoaded && !string.IsNullOrEmpty(multiPeerScene.name))
+                {
+                    SceneManager.SetActiveScene(multiPeerScene);
+                    return;
+                }
+            }
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded) continue;
+                if (scene.name == Shared.GameConstants.Scene.MainMenu) continue;
+                if (string.Equals(scene.name, "DontDestroyOnLoad", System.StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(scene.name)) continue;
+
+                SceneManager.SetActiveScene(scene);
+                return;
+            }
+
+            var temp = SceneManager.GetSceneByName("TempActiveScene");
+            if (!temp.IsValid())
+                temp = SceneManager.CreateScene("TempActiveScene");
+
+            SceneManager.SetActiveScene(temp);
         }
     }
 }

@@ -23,6 +23,12 @@ namespace FPSMultiplayer.Lobby
 
             EventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
             EventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+
+            if (HasStateAuthority)
+                SyncPlayersFromRunner();
+
+            // Notify UI on all peers that the lobby list should be refreshed (initial state)
+            EventBus.Publish(new LobbyListUpdated());
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)
@@ -36,17 +42,7 @@ namespace FPSMultiplayer.Lobby
         {
             if (!HasStateAuthority) return;
 
-            string initialName = evt.PlayerId == Runner.LocalPlayer.PlayerId
-                ? PlayerPrefs.GetString("PlayerName", $"Player_{evt.PlayerId}")
-                : $"Player_{evt.PlayerId}";
-
-            Players.Add(new LobbyPlayerEntry
-            {
-                PlayerId  = evt.PlayerId,
-                IsReady   = false,
-                IsHost    = evt.PlayerId == Runner.LocalPlayer.PlayerId,
-                Name      = new NetworkString<_32>(SanitizeName(initialName, evt.PlayerId))
-            });
+            EnsurePlayerEntry(evt.PlayerId);
         }
 
         private void OnPlayerLeft(PlayerLeftEvent evt)
@@ -64,7 +60,7 @@ namespace FPSMultiplayer.Lobby
         }
 
 
-        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
         public void RPC_StartMatch()
         {
             if (!HasStateAuthority) return;
@@ -164,6 +160,29 @@ namespace FPSMultiplayer.Lobby
                 name = name.Substring(0, 32);
 
             return name;
+        }
+
+        private void SyncPlayersFromRunner()
+        {
+            foreach (var player in Runner.ActivePlayers)
+                EnsurePlayerEntry(player.PlayerId);
+        }
+
+        private void EnsurePlayerEntry(int playerId)
+        {
+            if (TryGetPlayerIndex(playerId, out _)) return;
+
+            string initialName = playerId == Runner.LocalPlayer.PlayerId
+                ? PlayerPrefs.GetString("PlayerName", $"Player_{playerId}")
+                : $"Player_{playerId}";
+
+            Players.Add(new LobbyPlayerEntry
+            {
+                PlayerId  = playerId,
+                IsReady   = false,
+                IsHost    = Runner.IsServer && playerId == Runner.LocalPlayer.PlayerId,
+                Name      = new NetworkString<_32>(SanitizeName(initialName, playerId))
+            });
         }
     }
 
