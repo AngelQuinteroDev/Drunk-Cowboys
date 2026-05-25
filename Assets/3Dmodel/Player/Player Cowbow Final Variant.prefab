@@ -1,5 +1,69 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2793466295306169385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6619563772364859451}
+  - component: {fileID: 6187913787311931859}
+  m_Layer: 0
+  m_Name: 'cinemachinebrain '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6619563772364859451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2793466295306169385}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1167.3519, z: 614.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9087853616634052941}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6187913787311931859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2793466295306169385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72ece51f2901e7445ab60da3685d6b5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBrain
+  ShowDebugText: 0
+  ShowCameraFrustum: 1
+  IgnoreTimeScale: 0
+  WorldUpOverride: {fileID: 0}
+  ChannelMask: -1
+  UpdateMethod: 2
+  BlendUpdateMethod: 1
+  LensModeOverride:
+    Enabled: 0
+    DefaultMode: 2
+  DefaultBlend:
+    Style: 1
+    Time: 2
+    CustomCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  CustomBlends: {fileID: 0}
 --- !u!1001 &6573609935712569856
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -109,8 +173,12 @@ PrefabInstance:
       value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 6825332882932196802, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1164.702
+      objectReference: {fileID: 0}
+    - target: {fileID: 6825332882932196802, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.2
+      value: 613.7
       objectReference: {fileID: 0}
     - target: {fileID: 7898589561253532932, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       propertyPath: jumpForce
@@ -118,7 +186,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 2676455249842572109, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 6619563772364859451}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1092854466455410496, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       insertIndex: -1
@@ -588,5 +659,10 @@ MonoBehaviour:
 --- !u!4 &7792569132220609141 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3971861779827308661, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+  m_PrefabInstance: {fileID: 6573609935712569856}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &9087853616634052941 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2676455249842572109, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
   m_PrefabInstance: {fileID: 6573609935712569856}
   m_PrefabAsset: {fileID: 0}
