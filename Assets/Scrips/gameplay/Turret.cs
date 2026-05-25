@@ -1,194 +1,244 @@
+// ============================================================
+//  Turret — Fusion 2, Player Host Topology
+//  RESPONSABILIDADES:
+//    HOST  : detección de jugadores, rotación autoritaria,
+//            lógica de disparo, aplicar daño via HealthSystem
+//    TODOS : efectos visuales de color en Render()
+//
+//  La torreta es un NetworkObject en escena con StateAuthority
+//  cedida al host. Su rotación se replica via NetworkBehaviour.
+// ============================================================
+using Fusion;
 using UnityEngine;
 
-[RequireComponent(typeof(HealthSystem))]
-public class Turret : MonoBehaviour
+namespace FPSMultiplayer.Gameplay
 {
-    [Header("Detection")]
-    [SerializeField] private float detectionRange = 20f;
-    [SerializeField] private float fieldOfView = 120f;
-    [SerializeField] private LayerMask playerLayer;
-
-    [Header("Rotation")]
-    [SerializeField] private Transform rotatingHead;
-    [SerializeField] private float rotationSpeed = 60f;
-    [SerializeField] private float verticalMin = -20f;
-    [SerializeField] private float verticalMax = 45f;
-
-    [Header("Shooting")]
-    [SerializeField] private Transform muzzle;
-    [SerializeField] private GameObject bulletPrefab;
-    [SerializeField] private float fireInterval = 1.5f;
-    [SerializeField] private float bulletSpeed = 25f;
-    [SerializeField] private float damagePerShot = 10f;
-
-    [Header("Visual Feedback")]
-    [SerializeField] private Renderer bodyRenderer;
-    [SerializeField] private Color idleColor = Color.green;
-    [SerializeField] private Color alertColor = Color.yellow;
-    [SerializeField] private Color attackColor = Color.red;
-
-    private enum TurretState { Idle, Alert, Attacking }
-
-    private TurretState _state = TurretState.Idle;
-    private Transform _target;
-    private float _fireTimer;
-    private HealthSystem _health;
-    private MaterialPropertyBlock _mpb;
-
-    private void Awake()
+    [RequireComponent(typeof(HealthSystem))]
+    public class Turret : NetworkBehaviour
     {
-        _health = GetComponent<HealthSystem>();
-        _mpb = new MaterialPropertyBlock();
+        [Header("Detection")]
+        [SerializeField] private float     detectionRange = 20f;
+        [SerializeField] private float     fieldOfView    = 120f;
+        [SerializeField] private LayerMask playerLayer;
 
-        if (_health != null)
-            _health.OnDeath.AddListener(OnDeath);
-    }
+        [Header("Rotation")]
+        [SerializeField] private Transform rotatingHead;
+        [SerializeField] private float     rotationSpeed = 60f;
+        [SerializeField] private float     verticalMin   = -20f;
+        [SerializeField] private float     verticalMax   = 45f;
 
-    private void Update()
-    {
-        if (_health != null && !_health.IsAlive) return;
+        [Header("Shooting — Hitscan server-side")]
+        [SerializeField] private Transform muzzle;
+        [SerializeField] private GameObject bulletVFXPrefab;   // Solo visual
+        [SerializeField] private float     fireInterval   = 1.5f;
+        [SerializeField] private float     damagePerShot  = 10f;
+        [SerializeField] private float     maxRange       = 80f;
+        [SerializeField] private LayerMask hitMask        = ~0;
 
-        DetectPlayer();
-        UpdateState();
-        UpdateColor();
-    }
+        [Header("Visual Feedback")]
+        [SerializeField] private Renderer bodyRenderer;
+        [SerializeField] private Color    idleColor   = Color.green;
+        [SerializeField] private Color    alertColor  = Color.yellow;
+        [SerializeField] private Color    attackColor = Color.red;
 
-    private void DetectPlayer()
-    {
-        Collider[] hits = Physics.OverlapSphere(transform.position, detectionRange, playerLayer);
+        // ── Estado replicado ────────────────────────────────────────────────
+        [Networked] private TurretStateNet NetState   { get; set; }
+        [Networked] public  bool           IsDestroyed { get; private set; }
 
-        _target = null;
+        private enum TurretStateNet : byte { Idle, Attacking }
 
-        foreach (Collider hit in hits)
+        // ── Estado local (solo host) ────────────────────────────────────────
+        private Transform      _target;
+        private float          _fireTimer;
+        private HealthSystem   _health;
+        private MaterialPropertyBlock _mpb;
+        private ChangeDetector _changes;
+
+        // ── Spawned ─────────────────────────────────────────────────────────
+        public override void Spawned()
         {
-            Vector3 dirToTarget = (hit.transform.position - transform.position).normalized;
-            float angle = Vector3.Angle(transform.forward, dirToTarget);
+            _health  = GetComponent<HealthSystem>();
+            _mpb     = new MaterialPropertyBlock();
+            _changes = GetChangeDetector(ChangeDetector.Source.SimulationState);
 
-            if (angle > fieldOfView * 0.5f) continue;
+            if (_health != null)
+                _health.OnDeath.AddListener(OnDeath);
+        }
 
-            if (!Physics.Linecast(transform.position + Vector3.up, hit.transform.position + Vector3.up * 1.5f, out RaycastHit lineHit))
+        // ── FixedUpdateNetwork — HOST ONLY ──────────────────────────────────
+        public override void FixedUpdateNetwork()
+        {
+            if (!HasStateAuthority)  return;
+            if (IsDestroyed)         return;
+            if (_health != null && !_health.IsAlive) return;
+
+            DetectPlayer();
+            UpdateStateMachine();
+        }
+
+        // ── Render — TODOS ──────────────────────────────────────────────────
+        public override void Render()
+        {
+            foreach (var change in _changes.DetectChanges(this, out _, out _))
             {
+                if (change == nameof(NetState))
+                    UpdateColor();
+                if (change == nameof(IsDestroyed) && IsDestroyed)
+                    OnDeathVisual();
+            }
+        }
+
+        // ── Detección — HOST ONLY ───────────────────────────────────────────
+        private void DetectPlayer()
+        {
+            Collider[] hits = Physics.OverlapSphere(
+                transform.position, detectionRange, playerLayer);
+
+            _target = null;
+
+            foreach (var hit in hits)
+            {
+                var health = hit.GetComponentInParent<HealthSystem>();
+                if (health == null || !health.IsAlive) continue;
+
+                Vector3 dir   = (hit.transform.position - transform.position).normalized;
+                float   angle = Vector3.Angle(transform.forward, dir);
+                if (angle > fieldOfView * 0.5f) continue;
+
+                Vector3 eyePos    = transform.position + Vector3.up;
+                Vector3 targetPos = hit.transform.position + Vector3.up * 1.5f;
+
+                if (Physics.Linecast(eyePos, targetPos, out RaycastHit lineHit))
+                {
+                    // Solo acepta si lo que bloqueó es el propio jugador
+                    if (lineHit.collider.GetComponentInParent<HealthSystem>() != health)
+                        continue;
+                }
+
                 _target = hit.transform;
                 break;
             }
+        }
 
-            if (lineHit.collider.GetComponentInParent<HealthSystem>() != null &&
-                lineHit.collider.GetComponentInParent<HealthSystem>() == hit.GetComponentInParent<HealthSystem>())
+        // ── Máquina de estados — HOST ONLY ─────────────────────────────────
+        private void UpdateStateMachine()
+        {
+            if (_target == null)
             {
-                _target = hit.transform;
-                break;
+                NetState = TurretStateNet.Idle;
+                return;
+            }
+
+            NetState = TurretStateNet.Attacking;
+            RotateTowardTarget();
+
+            _fireTimer -= Runner.DeltaTime;
+            if (_fireTimer <= 0f)
+            {
+                _fireTimer = fireInterval;
+                FireHitscan();
             }
         }
-    }
 
-    private void UpdateState()
-    {
-        if (_target == null)
+        // ── Rotación — HOST (replicada vía transform de NetworkObject) ──────
+        private void RotateTowardTarget()
         {
-            _state = TurretState.Idle;
-            return;
+            if (rotatingHead == null || _target == null) return;
+
+            Vector3    dir       = (_target.position + Vector3.up * 1.5f) - rotatingHead.position;
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+
+            Vector3 euler = targetRot.eulerAngles;
+            float   pitch = euler.x > 180f ? euler.x - 360f : euler.x;
+            pitch = Mathf.Clamp(pitch, verticalMin, verticalMax);
+            targetRot = Quaternion.Euler(pitch, euler.y, 0f);
+
+            rotatingHead.rotation = Quaternion.RotateTowards(
+                rotatingHead.rotation,
+                targetRot,
+                rotationSpeed * Runner.DeltaTime
+            );
         }
 
-        float dist = Vector3.Distance(transform.position, _target.position);
-
-        if (dist > detectionRange)
+        // ── Disparo Hitscan — HOST ONLY ─────────────────────────────────────
+        // El host hace el raycast autoritario y aplica daño directamente.
+        // El VFX se envía a todos vía RPC.
+        private void FireHitscan()
         {
-            _state = TurretState.Idle;
-            return;
+            if (muzzle == null || _target == null) return;
+
+            Vector3 origin = muzzle.position;
+            Vector3 dir    = (_target.position + Vector3.up * 1.5f - origin).normalized;
+
+            if (Physics.Raycast(origin, dir, out RaycastHit hit, maxRange, hitMask,
+                QueryTriggerInteraction.Ignore))
+            {
+                var target = hit.collider.GetComponentInParent<HealthSystem>();
+                // PlayerRef.None porque la torreta no es un jugador
+                target?.TakeDamage(damagePerShot, PlayerRef.None);
+
+                RPC_PlayFireVFX(origin, hit.point);
+            }
+            else
+            {
+                RPC_PlayFireVFX(origin, origin + dir * maxRange);
+            }
         }
 
-        _state = TurretState.Attacking;
-
-        RotateTowardTarget();
-
-        _fireTimer -= Time.deltaTime;
-        if (_fireTimer <= 0f)
+        // ── RPC de VFX — StateAuthority → All ──────────────────────────────
+        [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+        private void RPC_PlayFireVFX(Vector3 origin, Vector3 hitPoint)
         {
-            _fireTimer = fireInterval;
-            Shoot();
-        }
-    }
+            if (bulletVFXPrefab == null) return;
 
-    private void RotateTowardTarget()
-    {
-        if (rotatingHead == null || _target == null) return;
-
-        Vector3 dir = (_target.position + Vector3.up * 1.5f) - rotatingHead.position;
-        Quaternion targetRot = Quaternion.LookRotation(dir);
-
-        Vector3 euler = targetRot.eulerAngles;
-        float pitch = euler.x > 180f ? euler.x - 360f : euler.x;
-        pitch = Mathf.Clamp(pitch, verticalMin, verticalMax);
-        targetRot = Quaternion.Euler(pitch, euler.y, 0f);
-
-        rotatingHead.rotation = Quaternion.RotateTowards(
-            rotatingHead.rotation,
-            targetRot,
-            rotationSpeed * Time.deltaTime
-        );
-    }
-
-    private void Shoot()
-    {
-        if (bulletPrefab == null || muzzle == null) return;
-
-        Vector3 dir = _target != null
-            ? (_target.position + Vector3.up * 1.5f - muzzle.position).normalized
-            : muzzle.forward;
-
-        GameObject bullet = Instantiate(bulletPrefab, muzzle.position, Quaternion.LookRotation(dir));
-
-        Rigidbody rb = bullet.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.useGravity = false;
-            rb.linearVelocity = dir * bulletSpeed;
+            Vector3    dir    = (hitPoint - origin).normalized;
+            GameObject visual = Instantiate(
+                bulletVFXPrefab, origin, Quaternion.LookRotation(dir));
+            Destroy(visual, 3f);
         }
 
-        Bullet b = bullet.GetComponent<Bullet>();
-        if (b != null) b.SetDamage(damagePerShot);
-
-        Destroy(bullet, 4f);
-    }
-
-    private void UpdateColor()
-    {
-        if (bodyRenderer == null) return;
-
-        Color target = _state switch
+        // ── Color visual — TODOS ────────────────────────────────────────────
+        private void UpdateColor()
         {
-            TurretState.Alert => alertColor,
-            TurretState.Attacking => attackColor,
-            _ => idleColor
-        };
+            if (bodyRenderer == null) return;
 
-        _mpb.SetColor("_BaseColor", target);
-        _mpb.SetColor("_Color", target);
-        bodyRenderer.SetPropertyBlock(_mpb);
-    }
-
-    private void OnDeath()
-    {
-        if (rotatingHead != null)
-            rotatingHead.rotation = Quaternion.Euler(90f, rotatingHead.eulerAngles.y, 0f);
-
-        if (bodyRenderer != null)
-        {
-            _mpb.SetColor("_BaseColor", Color.black);
-            _mpb.SetColor("_Color", Color.black);
+            Color target = NetState == TurretStateNet.Attacking ? attackColor : idleColor;
+            _mpb.SetColor("_BaseColor", target);
+            _mpb.SetColor("_Color",     target);
             bodyRenderer.SetPropertyBlock(_mpb);
         }
-    }
 
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        private void OnDeath()
+        {
+            if (HasStateAuthority)
+                IsDestroyed = true;
+        }
 
-        Gizmos.color = Color.red;
-        Vector3 left = Quaternion.Euler(0f, -fieldOfView * 0.5f, 0f) * transform.forward;
-        Vector3 right = Quaternion.Euler(0f, fieldOfView * 0.5f, 0f) * transform.forward;
-        Gizmos.DrawRay(transform.position, left * detectionRange);
-        Gizmos.DrawRay(transform.position, right * detectionRange);
+        private void OnDeathVisual()
+        {
+            if (rotatingHead != null)
+                rotatingHead.rotation = Quaternion.Euler(
+                    90f, rotatingHead.eulerAngles.y, 0f);
+
+            if (bodyRenderer != null)
+            {
+                _mpb.SetColor("_BaseColor", Color.black);
+                _mpb.SetColor("_Color",     Color.black);
+                bodyRenderer.SetPropertyBlock(_mpb);
+            }
+        }
+
+        // ── Gizmos ──────────────────────────────────────────────────────────
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+            Gizmos.color = Color.red;
+            Vector3 left  = Quaternion.Euler(0f, -fieldOfView * 0.5f, 0f) * transform.forward;
+            Vector3 right = Quaternion.Euler(0f,  fieldOfView * 0.5f, 0f) * transform.forward;
+            Gizmos.DrawRay(transform.position, left  * detectionRange);
+            Gizmos.DrawRay(transform.position, right * detectionRange);
+        }
     }
 }

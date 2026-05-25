@@ -1,7 +1,8 @@
+using Fusion;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class DrunkSystem : MonoBehaviour
+public class DrunkSystem : NetworkBehaviour
 {
     [Header("Drunk Level")]
     [SerializeField] private float maxDrunkLevel = 100f;
@@ -18,34 +19,60 @@ public class DrunkSystem : MonoBehaviour
     public UnityEvent OnSober;
     public UnityEvent OnMaxDrunk;
 
-    public float CurrentDrunkLevel { get; private set; }
+    [Networked] public float CurrentDrunkLevel { get; private set; }
 
-    private void Awake()
+    private float _lastRatio;
+
+    public override void Spawned()
     {
-        CurrentDrunkLevel = 0f;
+        if (HasStateAuthority)
+            CurrentDrunkLevel = 0f;
+
+        _lastRatio = GetDrunkRatio();
     }
 
-    private void Update()
+    public override void FixedUpdateNetwork()
     {
+        if (!HasStateAuthority) return;
+
         if (CurrentDrunkLevel <= 0f) return;
 
-        CurrentDrunkLevel = Mathf.Max(0f, CurrentDrunkLevel - soberRate * Time.deltaTime);
-        OnDrunkLevelChanged?.Invoke(GetDrunkRatio());
+        CurrentDrunkLevel = Mathf.Max(0f, CurrentDrunkLevel - soberRate * Runner.DeltaTime);
+    }
 
-        if (CurrentDrunkLevel <= 0f) OnSober?.Invoke();
+    public override void Render()
+    {
+        float ratio = GetDrunkRatio();
+        if (!Mathf.Approximately(ratio, _lastRatio))
+        {
+            OnDrunkLevelChanged?.Invoke(ratio);
+            if (Mathf.Approximately(ratio, 0f))
+                OnSober?.Invoke();
+            _lastRatio = ratio;
+        }
     }
 
     public void CollectBottle()
     {
+        if (!HasStateAuthority) return;
+
         CurrentDrunkLevel = Mathf.Min(CurrentDrunkLevel + drunkPerBottle, maxDrunkLevel);
-        OnDrunkLevelChanged?.Invoke(GetDrunkRatio());
-        if (Mathf.Approximately(CurrentDrunkLevel, maxDrunkLevel)) OnMaxDrunk?.Invoke();
+        if (Mathf.Approximately(CurrentDrunkLevel, maxDrunkLevel))
+            OnMaxDrunk?.Invoke();
     }
 
     public void AddDrunkLevel(float amount)
     {
+        if (!HasStateAuthority) return;
         CurrentDrunkLevel = Mathf.Clamp(CurrentDrunkLevel + amount, 0f, maxDrunkLevel);
-        OnDrunkLevelChanged?.Invoke(GetDrunkRatio());
+        if (Mathf.Approximately(CurrentDrunkLevel, maxDrunkLevel))
+            OnMaxDrunk?.Invoke();
+    }
+
+    public void ResetDrunk()
+    {
+        if (!HasStateAuthority) return;
+        CurrentDrunkLevel = 0f;
     }
 
     public float GetDrunkRatio() => maxDrunkLevel > 0f ? CurrentDrunkLevel / maxDrunkLevel : 0f;

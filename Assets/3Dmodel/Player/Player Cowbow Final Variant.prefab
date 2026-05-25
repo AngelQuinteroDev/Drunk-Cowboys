@@ -60,6 +60,10 @@ PrefabInstance:
       propertyPath: shotDelay
       value: 0.3
       objectReference: {fileID: 0}
+    - target: {fileID: 4088727558501611361, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      propertyPath: jumpImpulse
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 6026699549563146860, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       propertyPath: m_Center.y
       value: 1
@@ -76,6 +80,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.2
       objectReference: {fileID: 0}
+    - target: {fileID: 7898589561253532932, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      propertyPath: jumpForce
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -89,6 +97,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1092854466455410496, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       insertIndex: -1
       addedObject: {fileID: 588794631336474385}
+    - targetCorrespondingSourceObject: {fileID: 1092854466455410496, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5427437188389972061}
+    - targetCorrespondingSourceObject: {fileID: 1092854466455410496, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5843000586138582365}
     - targetCorrespondingSourceObject: {fileID: 7260331153352876816, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3673216564470450200}
@@ -113,6 +127,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7860016129147506222, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
   m_PrefabInstance: {fileID: 6573609935712569856}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &3938197986206572292 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7898589561253532932, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+  m_PrefabInstance: {fileID: 6573609935712569856}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6057550615106968896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 728069abe326ecb4ca1527f6733e1463, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
 --- !u!1 &4610498407984572688 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7260331153352876816, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
@@ -210,16 +235,74 @@ MonoBehaviour:
   drunkNeck: 0.2
   drunkSpineUpper: 0.1
   drunkSpineLower: 0.05
+--- !u!114 &5427437188389972061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6057550615106968896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
+  SortKey: 1608587647
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 6937766576407133784}
+  - {fileID: 7366393426100704220}
+  - {fileID: 3938197986206572292}
+  - {fileID: 7170913017141853537}
+  - {fileID: 7624943198807932609}
+  ForceRemoteRenderTimeframe: 0
+--- !u!114 &5843000586138582365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6057550615106968896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c500cd883082d414caabd6800720dff6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FPSMultiplayer.Gameplay.PlayerInputHandler
+  _inputAsset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!95 &6932914187316770679 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 4254933875088194935, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
   m_PrefabInstance: {fileID: 6573609935712569856}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6937766576407133784 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4286796386863903832, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+  m_PrefabInstance: {fileID: 6573609935712569856}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6057550615106968896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88d19de84e796504490b12164367c4b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
 --- !u!4 &7123715514401677609 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4172201239753894697, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
   m_PrefabInstance: {fileID: 6573609935712569856}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7170913017141853537 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4088727558501611361, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+  m_PrefabInstance: {fileID: 6573609935712569856}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6057550615106968896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 378411a89480da345945c2f888327a2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Unity::Fusion.NetworkCharacterController
 --- !u!4 &7250243464695061361 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4585840266713190769, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
@@ -241,6 +324,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3633556976422158931, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
   m_PrefabInstance: {fileID: 6573609935712569856}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7624943198807932609 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3669055014948205761, guid: 1e996b003d60c124d843ef90731f8753, type: 3}
+  m_PrefabInstance: {fileID: 6573609935712569856}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2e13236fae8c4947a601bd3fde7c766, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSystem
 --- !u!4 &7792569132220609141 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3971861779827308661, guid: 1e996b003d60c124d843ef90731f8753, type: 3}

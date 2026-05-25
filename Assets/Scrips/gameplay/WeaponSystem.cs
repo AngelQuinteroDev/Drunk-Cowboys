@@ -1,7 +1,8 @@
+using Fusion;
 using UnityEngine;
-using System.Collections;
+using FPSMultiplayer.Gameplay;
 
-public class WeaponSystem : MonoBehaviour
+public class WeaponSystem : NetworkBehaviour
 {
     [Header("Revolver Stats")]
     [SerializeField] private int cylinderSize = 5;
@@ -29,24 +30,40 @@ public class WeaponSystem : MonoBehaviour
     [SerializeField] private float baseSway = 0.015f;
     [SerializeField] private float swaySpeed = 1.5f;
 
+    [Header("Hit Scan")]
+    [SerializeField] private float maxRange = 120f;
+    [SerializeField] private LayerMask hitMask = ~0;
+
     [Header("References")]
     [SerializeField] private Transform muzzlePoint;
     [SerializeField] private Transform weaponVisual;
     [SerializeField] private Transform aimTarget;
     [SerializeField] private MuzzleSmoke muzzleSmoke;
 
-    public int CurrentAmmo { get; private set; }
-    public bool IsReloading { get; private set; }
-    public int CylinderSize => cylinderSize;
+    [Networked] public int CurrentAmmo { get; private set; }
+    [Networked] public bool IsReloading { get; private set; }
+    [Networked] public bool IsFiring { get; private set; }
+    [Networked] private TickTimer FireCooldown { get; set; }
+    [Networked] private TickTimer ReloadTimer { get; set; }
+    [Networked] private TickTimer FireFxTimer { get; set; }
 
-    private float _nextFireTime;
+    public int CylinderSize => cylinderSize;
+    public bool CanShoot => !IsReloading && CurrentAmmo > 0 && FireCooldown.ExpiredOrNotRunning(Runner);
+
     private Vector3 _defaultWeaponPos;
     private DrunkSystem _drunk;
+    private TickTimer _shotDelayTimer;
+    private bool _shotQueued;
+    private Vector3 _queuedOrigin;
+    private Vector3 _queuedDirection;
+    private PlayerRef _queuedOwner;
 
-    private void Awake()
+    public override void Spawned()
     {
         _drunk = GetComponentInParent<DrunkSystem>();
-        CurrentAmmo = cylinderSize;
+
+        if (HasStateAuthority)
+            CurrentAmmo = cylinderSize;
 
         if (weaponVisual != null)
             _defaultWeaponPos = weaponVisual.localPosition;
@@ -55,75 +72,87 @@ public class WeaponSystem : MonoBehaviour
             muzzleSmoke = GetComponentInChildren<MuzzleSmoke>();
     }
 
-    private void Update()
+    public override void FixedUpdateNetwork()
     {
-        HandleSway();
+        if (!HasStateAuthority) return;
+
+        if (IsReloading && ReloadTimer.Expired(Runner))
+            FinishReload();
+
+        if (IsFiring && FireFxTimer.Expired(Runner))
+            IsFiring = false;
+
+        if (_shotQueued && _shotDelayTimer.Expired(Runner))
+        {
+            _shotQueued = false;
+            FireShot(_queuedOrigin, _queuedDirection, _queuedOwner);
+        }
     }
 
-    public void TryShoot()
+    public override void Render()
     {
-        if (IsReloading || Time.time < _nextFireTime) return;
+        if (HasInputAuthority)
+            HandleSway();
+    }
+
+    public void ProcessInput(bool fire, bool reload, Vector3 origin, Vector3 direction, PlayerRef owner)
+    {
+        if (!HasStateAuthority) return;
+
+        if (reload)
+            TryReload();
+
+        if (fire)
+            TryShoot(origin, direction, owner);
+    }
+
+    private void TryShoot(Vector3 origin, Vector3 direction, PlayerRef owner)
+    {
+        if (IsReloading) return;
+        if (!FireCooldown.ExpiredOrNotRunning(Runner)) return;
 
         if (CurrentAmmo <= 0)
         {
-            StartCoroutine(ReloadRoutine());
+            TryReload();
             return;
         }
 
-        StartCoroutine(ShootWithDelay());
-    }
-
-    public void TryReload()
-    {
-        if (!IsReloading && CurrentAmmo < cylinderSize)
-            StartCoroutine(ReloadRoutine());
-    }
-
-    private IEnumerator ShootWithDelay()
-    {
         CurrentAmmo--;
-        _nextFireTime = Time.time + 1f / fireRate;
-        ApplyRecoil();
+        FireCooldown = TickTimer.CreateFromSeconds(Runner, 1f / fireRate);
 
-        yield return new WaitForSeconds(shotDelay);
+        IsFiring = true;
+        FireFxTimer = TickTimer.CreateFromSeconds(Runner, 0.12f);
 
-        Vector3 origin = muzzlePoint != null ? muzzlePoint.position : transform.position;
-        Vector3 direction = GetShootDirection(origin);
-        direction = ApplySpread(direction);
+        Vector3 shotOrigin = muzzlePoint != null ? muzzlePoint.position : origin;
+        Vector3 shotDir = ApplySpread(direction.normalized);
 
-        SpawnBullet(origin, direction);
-
-        if (muzzleSmoke != null)
-            muzzleSmoke.Emit();
+        if (shotDelay > 0f)
+        {
+            _shotQueued = true;
+            _queuedOrigin = shotOrigin;
+            _queuedDirection = shotDir;
+            _queuedOwner = owner;
+            _shotDelayTimer = TickTimer.CreateFromSeconds(Runner, shotDelay);
+        }
+        else
+        {
+            FireShot(shotOrigin, shotDir, owner);
+        }
 
         if (CurrentAmmo <= 0)
-            StartCoroutine(ReloadRoutine());
+            TryReload();
     }
 
-    private Vector3 GetShootDirection(Vector3 origin)
+    private void FireShot(Vector3 origin, Vector3 direction, PlayerRef owner)
     {
-        if (aimTarget != null)
-            return (aimTarget.position - origin).normalized;
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, maxRange, hitMask, QueryTriggerInteraction.Ignore))
+        {
+            var target = hit.collider.GetComponentInParent<HealthSystem>();
+            if (target != null)
+                target.TakeDamage(CalculateDamage(), owner);
+        }
 
-        if (Camera.main != null)
-            return Camera.main.transform.forward;
-
-        return transform.forward;
-    }
-
-    private void SpawnBullet(Vector3 origin, Vector3 direction)
-    {
-        if (bulletPrefab == null) return;
-
-        GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.LookRotation(direction));
-
-        Bullet b = bullet.GetComponent<Bullet>();
-        if (b != null) b.SetDamage(CalculateDamage());
-
-        Collider bulletCol = bullet.GetComponent<Collider>();
-        Collider playerCol = GetComponentInParent<Collider>();
-        if (bulletCol != null && playerCol != null)
-            Physics.IgnoreCollision(bulletCol, playerCol);
+        RPC_PlayFireFx(origin, direction);
     }
 
     private float CalculateDamage()
@@ -140,15 +169,23 @@ public class WeaponSystem : MonoBehaviour
         return direction.normalized;
     }
 
-    private IEnumerator ReloadRoutine()
+    private void TryReload()
     {
-        IsReloading = true;
+        if (IsReloading || CurrentAmmo >= cylinderSize) return;
+
         float reloadTime = _drunk != null
             ? baseReloadTime * _drunk.GetReloadTimeMult()
             : baseReloadTime;
-        yield return new WaitForSeconds(reloadTime);
+
+        IsReloading = true;
+        ReloadTimer = TickTimer.CreateFromSeconds(Runner, reloadTime);
+    }
+
+    private void FinishReload()
+    {
         CurrentAmmo = cylinderSize;
         IsReloading = false;
+        ReloadTimer = default;
     }
 
     private void ApplyRecoil()
@@ -176,5 +213,35 @@ public class WeaponSystem : MonoBehaviour
             _defaultWeaponPos + offset,
             Time.deltaTime * 8f
         );
+    }
+
+    public void ResetAmmo()
+    {
+        if (!HasStateAuthority) return;
+        CurrentAmmo = cylinderSize;
+        IsReloading = false;
+        ReloadTimer = default;
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void RPC_PlayFireFx(Vector3 origin, Vector3 direction)
+    {
+        if (muzzleSmoke != null)
+            muzzleSmoke.Emit();
+
+        if (bulletPrefab != null)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.LookRotation(direction));
+            if (bullet.TryGetComponent<Bullet>(out var b))
+                b.Initialize(0f, false);
+
+            Collider bulletCol = bullet.GetComponent<Collider>();
+            Collider playerCol = GetComponentInParent<Collider>();
+            if (bulletCol != null && playerCol != null)
+                Physics.IgnoreCollision(bulletCol, playerCol);
+        }
+
+        if (HasInputAuthority)
+            ApplyRecoil();
     }
 }

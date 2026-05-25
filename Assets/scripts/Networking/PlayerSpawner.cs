@@ -10,6 +10,7 @@ namespace FPSMultiplayer.Networking
     {
         void SpawnPlayer(NetworkRunner runner, PlayerRef player);
         void DespawnPlayer(NetworkRunner runner, PlayerRef player);
+        Transform GetSpawnPoint(PlayerRef player);
     }
 
     public class PlayerSpawner : MonoBehaviour, IPlayerSpawner
@@ -45,6 +46,7 @@ namespace FPSMultiplayer.Networking
             );
 
             _spawnedPlayers[player] = networkPlayer;
+            runner.SetPlayerObject(player, networkPlayer);
             EventBus.Publish(new PlayerSpawned { PlayerId = player.PlayerId });
         }
 
@@ -66,7 +68,7 @@ namespace FPSMultiplayer.Networking
             _spawnedPlayers.Remove(player);
         }
 
-        private Transform GetSpawnPoint(PlayerRef player)
+        public Transform GetSpawnPoint(PlayerRef player)
         {
             if (_spawnPoints == null || _spawnPoints.Length == 0)
                 return transform;

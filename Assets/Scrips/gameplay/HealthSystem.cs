@@ -1,67 +1,143 @@
+using Fusion;
 using UnityEngine;
 using UnityEngine.Events;
+using FPSMultiplayer.Core;
+using FPSMultiplayer.Core.Events;
 
-public class HealthSystem : MonoBehaviour
+namespace FPSMultiplayer.Gameplay
 {
-    [Header("Health")]
-    [SerializeField] private float maxHealth = 100f;
-    [SerializeField] private bool canRespawn = true;
-    [SerializeField] private float respawnDelay = 3f;
-
-    [Header("Drunk Damage Resistance")]
-    [SerializeField] private AnimationCurve resistanceCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.35f);
-
-    public UnityEvent<float, float> OnHealthChanged;
-    public UnityEvent OnDeath;
-    public UnityEvent OnRespawn;
-
-    public float CurrentHealth { get; private set; }
-    public bool IsAlive { get; private set; }
-
-    private DrunkSystem _drunk;
-
-    private void Awake()
+    public class HealthSystem : NetworkBehaviour
     {
-        _drunk = GetComponent<DrunkSystem>();
-        CurrentHealth = maxHealth;
-        IsAlive = true;
-    }
+        [Header("Health")]
+        [SerializeField] private float maxHealth = 100f;
+        [SerializeField] private bool  canRespawn  = true;
+        [SerializeField] private float respawnDelay = 3f;
 
-    public void TakeDamage(float rawDamage)
-    {
-        if (!IsAlive) return;
+        [Header("Drunk Damage Resistance")]
+        [SerializeField] private AnimationCurve resistanceCurve =
+            AnimationCurve.Linear(0f, 1f, 1f, 0.35f);
 
-        float mult = _drunk != null ? resistanceCurve.Evaluate(_drunk.GetDrunkRatio()) : 1f;
-        float damage = rawDamage * mult;
+        public UnityEvent<float, float> OnHealthChanged;
+        public UnityEvent               OnDeath;
+        public UnityEvent               OnRespawn;
 
-        CurrentHealth = Mathf.Clamp(CurrentHealth - damage, 0f, maxHealth);
-        OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+        [Networked] public float      CurrentHealth { get; private set; }
+        [Networked] public bool       IsAlive       { get; private set; }
+        [Networked] private TickTimer RespawnTimer  { get; set; }
 
-        if (CurrentHealth <= 0f) HandleDeath();
-    }
+        private DrunkSystem    _drunk;
+        private ChangeDetector _changes;
 
-    public void Heal(float amount)
-    {
-        if (!IsAlive) return;
-        CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, maxHealth);
-        OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
-    }
+        // Copia local para detectar transiciones en Render()
+        private float _lastHealth;
+        private bool  _lastAlive;
 
-    public float GetHealthRatio() => maxHealth > 0f ? CurrentHealth / maxHealth : 0f;
+        public override void Spawned()
+        {
+            _drunk = GetComponent<DrunkSystem>();
 
-    private void HandleDeath()
-    {
-        IsAlive = false;
-        OnDeath?.Invoke();
-        if (canRespawn) StartCoroutine(RespawnRoutine());
-    }
+            if (HasStateAuthority)
+            {
+                CurrentHealth = maxHealth;
+                IsAlive       = true;
+            }
 
-    private System.Collections.IEnumerator RespawnRoutine()
-    {
-        yield return new WaitForSeconds(respawnDelay);
-        CurrentHealth = maxHealth;
-        IsAlive = true;
-        OnRespawn?.Invoke();
-        OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+            _changes    = GetChangeDetector(ChangeDetector.Source.SimulationState);
+            _lastHealth = CurrentHealth;
+            _lastAlive  = IsAlive;
+        }
+
+        public override void FixedUpdateNetwork()
+        {
+            if (!HasStateAuthority) return;
+
+            // Comprobar timer de respawn
+            if (!IsAlive && canRespawn && RespawnTimer.Expired(Runner))
+                ForceRespawn();
+        }
+
+        public override void Render()
+        {
+            foreach (var change in _changes.DetectChanges(this, out _, out _))
+            {
+                switch (change)
+                {
+                    case nameof(CurrentHealth):
+                        OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+                        _lastHealth = CurrentHealth;
+                        break;
+
+                    case nameof(IsAlive):
+                        if (!IsAlive && _lastAlive)
+                            OnDeath?.Invoke();
+                        if (IsAlive && !_lastAlive)
+                            OnRespawn?.Invoke();
+                        _lastAlive = IsAlive;
+                        break;
+                }
+            }
+        }
+
+        public void TakeDamage(float rawDamage) =>
+            TakeDamage(rawDamage, PlayerRef.None);
+
+        public void TakeDamage(float rawDamage, PlayerRef instigator)
+        {
+            if (!HasStateAuthority || !IsAlive) return;
+
+            float mult   = _drunk != null ? resistanceCurve.Evaluate(_drunk.GetDrunkRatio()) : 1f;
+            float damage = rawDamage * mult;
+
+            CurrentHealth = Mathf.Clamp(CurrentHealth - damage, 0f, maxHealth);
+
+            if (CurrentHealth <= 0f)
+                HandleDeath(instigator);
+        }
+
+        public void Heal(float amount)
+        {
+            if (!HasStateAuthority || !IsAlive) return;
+            CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, maxHealth);
+        }
+
+        public float GetHealthRatio() =>
+            maxHealth > 0f ? CurrentHealth / maxHealth : 0f;
+
+        private void HandleDeath(PlayerRef instigator)
+        {
+            IsAlive = false;
+
+            if (canRespawn)
+                RespawnTimer = TickTimer.CreateFromSeconds(Runner, respawnDelay);
+
+            if (TryGetComponent<PlayerController>(out var victim))
+                victim.Deaths++;
+
+            if (instigator != PlayerRef.None)
+            {
+                var killerObj = Runner.GetPlayerObject(instigator);
+                if (killerObj != null &&
+                    killerObj.TryGetComponent<PlayerController>(out var killer))
+                    killer.Kills++;
+            }
+
+            if (Object != null && Object.InputAuthority != PlayerRef.None)
+            {
+                EventBus.Publish(new PlayerDied
+                {
+                    PlayerId = Object.InputAuthority.PlayerId,
+                    KillerId = instigator != PlayerRef.None ? instigator.PlayerId : -1
+                });
+            }
+        }
+
+        public void ForceRespawn()
+        {
+            if (!HasStateAuthority) return;
+
+            CurrentHealth = maxHealth;
+            IsAlive       = true;
+            RespawnTimer  = default;
+        }
     }
 }

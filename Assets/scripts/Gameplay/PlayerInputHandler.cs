@@ -22,6 +22,8 @@ namespace FPSMultiplayer.Gameplay
     public class PlayerInputHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         [SerializeField] private InputActionAsset _inputAsset;
+        [SerializeField] private float _moveDeadzone = 0.15f;
+        [SerializeField] private float _lookDeadzone = 0.05f;
 
         private InputActionMap _playerMap;
         private InputAction _moveAction;
@@ -36,9 +38,12 @@ namespace FPSMultiplayer.Gameplay
 
         private Vector2 _lookDelta;
         private bool    _jumpPending;
+        private NetworkObject _netObject;
 
         private void Awake()
         {
+            _netObject = GetComponent<NetworkObject>();
+
             if (_inputAsset == null)
             {
                 Debug.LogError("[PlayerInputHandler] Missing InputActionAsset. Assign InputSystem_Actions in the inspector.");
@@ -80,11 +85,21 @@ namespace FPSMultiplayer.Gameplay
         public void OnInput(NetworkRunner runner, NetworkInput input)
         {
             if (_playerMap == null) return;
+            if (!HasLocalInputAuthority())
+            {
+                _jumpPending = false;
+                _lookDelta = Vector2.zero;
+                input.Set(default(PlayerInputData));
+                return;
+            }
+
+            Vector2 move = ApplyDeadzone(_moveAction.ReadValue<Vector2>(), _moveDeadzone);
+            Vector2 look = ApplyDeadzone(_lookDelta, _lookDeadzone);
 
             var data = new PlayerInputData
             {
-                MoveDirection  = _moveAction.ReadValue<Vector2>(),
-                LookDelta      = _lookDelta,
+                MoveDirection  = move,
+                LookDelta      = look,
                 Jump           = _jumpPending,
                 Sprint         = _sprintAction.IsPressed(),
                 Crouch         = _crouchAction.IsPressed(),
@@ -102,8 +117,25 @@ namespace FPSMultiplayer.Gameplay
 
         private void Update()
         {
+            if (!HasLocalInputAuthority()) return;
+
             if (_lookAction != null)
                 _lookDelta += _lookAction.ReadValue<Vector2>();
+        }
+
+        private bool HasLocalInputAuthority()
+        {
+            if (_netObject == null)
+                _netObject = GetComponent<NetworkObject>();
+
+            return _netObject != null && _netObject.HasInputAuthority;
+        }
+
+        private static Vector2 ApplyDeadzone(Vector2 value, float deadzone)
+        {
+            if (value.sqrMagnitude < deadzone * deadzone)
+                return Vector2.zero;
+            return value;
         }
 
         public void OnPlayerJoined(NetworkRunner r, PlayerRef p) { }

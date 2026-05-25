@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using FPSMultiplayer.Gameplay;
 
 public class PlayerHUD : MonoBehaviour
 {
@@ -42,6 +43,7 @@ public class PlayerHUD : MonoBehaviour
     private HealthSystem _health;
 
     private DrunkSystem _drunk;
+    private bool _bound;
 
     private static readonly Color _healthHigh =
         new Color(0.22f, 0.78f, 0.45f);
@@ -64,31 +66,9 @@ public class PlayerHUD : MonoBehaviour
     private void Awake()
     {
         if (player == null)
-            player = FindFirstObjectByType<PlayerController>();
+            player = FindLocalPlayer();
 
-        if (player != null)
-        {
-            _weapon =
-                player.GetComponentInChildren<WeaponSystem>();
-
-            _health =
-                player.GetComponent<HealthSystem>();
-
-            _drunk =
-                player.GetComponent<DrunkSystem>();
-        }
-
-        if (_health != null)
-        {
-            _health.OnHealthChanged.AddListener(OnHealthChanged);
-
-            _health.OnDeath.AddListener(OnDeath);
-
-            float ratio =
-                _health.GetHealthRatio();
-
-            SetHealthBar(ratio);
-        }
+        BindPlayer();
 
         if (reloadText != null)
             reloadText.gameObject.SetActive(false);
@@ -118,6 +98,18 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    private PlayerController FindLocalPlayer()
+    {
+        var players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        foreach (var p in players)
+        {
+            if (p != null && p.HasInputAuthority)
+                return p;
+        }
+
+        return null;
+    }
+
     private void OnDestroy()
     {
         if (_health != null)
@@ -130,6 +122,15 @@ public class PlayerHUD : MonoBehaviour
 
     private void Update()
     {
+        if (player == null)
+        {
+            player = FindLocalPlayer();
+            BindPlayer();
+        }
+
+        if (player == null || !player.HasInputAuthority)
+            return;
+
         UpdateCrosshair();
 
         UpdateAmmo();
@@ -250,5 +251,24 @@ public class PlayerHUD : MonoBehaviour
                     ratio
                 );
         }
+    }
+
+    private void BindPlayer()
+    {
+        if (player == null || _bound)
+            return;
+
+        _weapon = player.GetComponentInChildren<WeaponSystem>();
+        _health = player.GetComponent<HealthSystem>();
+        _drunk = player.GetComponent<DrunkSystem>();
+
+        if (_health != null)
+        {
+            _health.OnHealthChanged.AddListener(OnHealthChanged);
+            _health.OnDeath.AddListener(OnDeath);
+            SetHealthBar(_health.GetHealthRatio());
+        }
+
+        _bound = true;
     }
 }
