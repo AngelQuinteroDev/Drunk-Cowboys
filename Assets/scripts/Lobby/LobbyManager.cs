@@ -1,5 +1,3 @@
-// Administra el estado del lobby. NetworkBehaviour porque vive en un NetworkObject.
-// El host tiene StateAuthority y escribe. Los clientes leen y reaccionan.
 using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
@@ -10,7 +8,6 @@ namespace FPSMultiplayer.Lobby
 {
     public class LobbyManager : NetworkBehaviour
     {
-        // Lista replicada de datos de lobby. Fusion replica IList<NetworkStruct> automáticamente.
         [Networked, Capacity(16)]
         public NetworkLinkedList<LobbyPlayerEntry> Players { get; }
 
@@ -26,6 +23,12 @@ namespace FPSMultiplayer.Lobby
 
             EventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
             EventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+
+            if (HasStateAuthority)
+                SyncPlayersFromRunner();
+
+            // Notify UI on all peers that the lobby list should be refreshed (initial state)
+            EventBus.Publish(new LobbyListUpdated());
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)
@@ -39,17 +42,7 @@ namespace FPSMultiplayer.Lobby
         {
             if (!HasStateAuthority) return;
 
-            string initialName = evt.PlayerId == Runner.LocalPlayer.PlayerId
-                ? PlayerPrefs.GetString("PlayerName", $"Player_{evt.PlayerId}")
-                : $"Player_{evt.PlayerId}";
-
-            Players.Add(new LobbyPlayerEntry
-            {
-                PlayerId  = evt.PlayerId,
-                IsReady   = false,
-                IsHost    = evt.PlayerId == Runner.LocalPlayer.PlayerId,
-                Name      = new NetworkString<_32>(SanitizeName(initialName, evt.PlayerId))
-            });
+            EnsurePlayerEntry(evt.PlayerId);
         }
 
         private void OnPlayerLeft(PlayerLeftEvent evt)
@@ -66,9 +59,8 @@ namespace FPSMultiplayer.Lobby
             }
         }
 
-        // ─── Host Controls ────────────────────────────────────────────────────
 
-        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
         public void RPC_StartMatch()
         {
             if (!HasStateAuthority) return;
@@ -77,7 +69,6 @@ namespace FPSMultiplayer.Lobby
             MatchStarted = true;
             EventBus.Publish(new MatchStartRequested());
 
-            // Trigger scene change
             ServiceLocator.Get<Infrastructure.ISceneFlowManager>()?.LoadGameplayScene();
         }
 
@@ -170,9 +161,31 @@ namespace FPSMultiplayer.Lobby
 
             return name;
         }
+
+        private void SyncPlayersFromRunner()
+        {
+            foreach (var player in Runner.ActivePlayers)
+                EnsurePlayerEntry(player.PlayerId);
+        }
+
+        private void EnsurePlayerEntry(int playerId)
+        {
+            if (TryGetPlayerIndex(playerId, out _)) return;
+
+            string initialName = playerId == Runner.LocalPlayer.PlayerId
+                ? PlayerPrefs.GetString("PlayerName", $"Player_{playerId}")
+                : $"Player_{playerId}";
+
+            Players.Add(new LobbyPlayerEntry
+            {
+                PlayerId  = playerId,
+                IsReady   = false,
+                IsHost    = Runner.IsServer && playerId == Runner.LocalPlayer.PlayerId,
+                Name      = new NetworkString<_32>(SanitizeName(initialName, playerId))
+            });
+        }
     }
 
-    // Struct de datos por jugador en lobby. NetworkStruct para poder usarlo en listas replicadas.
     public struct LobbyPlayerEntry : INetworkStruct
     {
         public int                  PlayerId;
@@ -181,7 +194,6 @@ namespace FPSMultiplayer.Lobby
         public NetworkString<_32>   Name;
     }
 
-    // Evento interno para actualizar la UI del lobby
     public readonly struct LobbyListUpdated { }
 
 }

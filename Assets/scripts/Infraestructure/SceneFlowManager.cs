@@ -41,6 +41,7 @@ namespace FPSMultiplayer.Infrastructure
 
         private void OnSceneChangeRequest(Core.Events.SceneChangeRequest evt)
         {
+            Debug.Log($"[SceneFlowManager] SceneChangeRequest received: {evt.SceneName}");
             switch (evt.SceneName)
             {
                 case GameConstants.Scene.Lobby:    LoadLobbyScene();    break;
@@ -52,9 +53,28 @@ namespace FPSMultiplayer.Infrastructure
         public void LoadGameplayScene()
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
-            if (_runner == null || !_runner.IsServer) return;
+            if (_runner == null)
+            {
+                Debug.LogError("[SceneFlowManager] Runner is null when trying to load gameplay scene.");
+                return;
+            }
+
+            Debug.Log($"[SceneFlowManager] Request to load gameplay scene. Runner.IsServer={_runner.IsServer}, Runner={_runner}");
+
+            if (!_runner.IsServer)
+            {
+                Debug.LogWarning("[SceneFlowManager] Only server should invoke scene loads.");
+                return;
+            }
+
             var sceneRef = ResolveSceneRef(_gameplayScene, _gameplaySceneName);
-            if (sceneRef == default) return;
+            if (sceneRef == default)
+            {
+                Debug.LogError("[SceneFlowManager] Resolved sceneRef is invalid for gameplay scene.");
+                return;
+            }
+
+            Debug.Log($"[SceneFlowManager] Invoking Runner.LoadScene for '{_gameplaySceneName}'.");
             _runner.LoadScene(sceneRef);
         }
 
@@ -71,8 +91,14 @@ namespace FPSMultiplayer.Infrastructure
 
         public void LoadMainMenu()
         {
+            Debug.Log("[SceneFlowManager] LoadMainMenu invoked.");
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
-            _runner?.Shutdown();
+            if (_runner != null)
+            {
+                Debug.Log($"[SceneFlowManager] Shutting down runner. IsServer={_runner.IsServer}");
+                _runner.Shutdown();
+            }
+
             if (!TryLoadUnityScene(_mainMenuScene, _mainMenuSceneName))
             {
                 SceneManager.LoadScene(SceneManager.GetSceneByBuildIndex(0).name);

@@ -1,4 +1,3 @@
-// Constantes centralizadas. No magic strings dispersas en el proyecto.
 namespace FPSMultiplayer.Shared
 {
     public static class GameConstants

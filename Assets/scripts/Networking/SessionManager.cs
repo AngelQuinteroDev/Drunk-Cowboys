@@ -1,6 +1,5 @@
-// Corazón del networking. Crea/une salas. Expone el NetworkRunner.
-// Implementa INetworkRunnerCallbacks para reaccionar a eventos de Fusion.
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -35,7 +34,6 @@ namespace FPSMultiplayer.Networking
                 _sceneManager = sceneManager;
         }
 
-        // ─── Crear sala ───────────────────────────────────────────────────────
         public async Task CreateRoom(string roomName, int maxPlayers = 8)
         {
             if (!EnsureRunnerPrefab()) return;
@@ -48,18 +46,17 @@ namespace FPSMultiplayer.Networking
 
             var result = await Runner.StartGame(new StartGameArgs
             {
-                GameMode       = GameMode.Host,           // Player Host topology
-                SessionName    = roomName,
-                PlayerCount    = maxPlayers,
-                SceneManager   = sceneManager,
-                Scene          = sceneRef,
+                GameMode = GameMode.Host,
+                SessionName = roomName,
+                PlayerCount = maxPlayers,
+                SceneManager = sceneManager,
+                Scene = sceneRef,
             });
 
             if (!result.Ok)
                 Debug.LogError($"[SessionManager] CreateRoom failed: {result.ShutdownReason}");
         }
 
-        // ─── Unirse a sala ────────────────────────────────────────────────────
         public async Task JoinRoom(string roomName)
         {
             if (!EnsureRunnerPrefab()) return;
@@ -72,10 +69,10 @@ namespace FPSMultiplayer.Networking
 
             var result = await Runner.StartGame(new StartGameArgs
             {
-                GameMode     = GameMode.Client,
-                SessionName  = roomName,
+                GameMode = GameMode.Client,
+                SessionName = roomName,
                 SceneManager = sceneManager,
-                Scene        = sceneRef,
+                Scene = sceneRef,
             });
 
             if (!result.Ok)
@@ -88,13 +85,11 @@ namespace FPSMultiplayer.Networking
                 await Runner.Shutdown();
         }
 
-        // ─── INetworkRunnerCallbacks ──────────────────────────────────────────
         public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
         {
             Debug.Log($"[SessionManager] Player joined: {player}");
             EventBus.Publish(new PlayerJoinedEvent { PlayerId = player.PlayerId });
 
-            // Solo el host spawnea jugadores
             if (runner.IsServer)
             {
                 if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
@@ -117,13 +112,34 @@ namespace FPSMultiplayer.Networking
         public void OnShutdown(NetworkRunner runner, ShutdownReason reason)
         {
             Debug.Log($"[SessionManager] Shutdown: {reason}");
-            // Publicar evento para que UI y managers limpien su estado
             EventBus.Publish(new Core.Events.SceneChangeRequest { SceneName = Shared.GameConstants.Scene.MainMenu });
         }
 
+        public void OnSceneLoadDone(NetworkRunner runner)
+        {
+            Debug.Log($"[SessionManager] OnSceneLoadDone. Runner.IsServer={runner.IsServer}, ActivePlayers={runner.ActivePlayers.Count()}");
+            LogLoadedScenes();
+            EnsureNonMenuActiveScene(runner);
+            UnloadSceneIfLoaded(Shared.GameConstants.Scene.MainMenu);
+        }
+
+        public void OnSceneLoadStart(NetworkRunner runner)
+        {
+            Debug.Log($"[SessionManager] OnSceneLoadStart. Runner.IsServer={runner.IsServer}");
+        }
+
         public void OnConnectedToServer(NetworkRunner runner) { }
-        public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
-        public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
+
+        public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
+        {
+            Debug.Log($"[SessionManager] DisconnectedFromServer: {reason}");
+        }
+
+        public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason)
+        {
+            Debug.Log($"[SessionManager] ConnectFailed: {reason}");
+        }
+
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
@@ -133,16 +149,13 @@ namespace FPSMultiplayer.Networking
         public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
         public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
         public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-        public void OnSceneLoadDone(NetworkRunner runner) { }
-        public void OnSceneLoadStart(NetworkRunner runner) { }
         public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
 
         private bool EnsureRunnerPrefab()
         {
             if (_runnerPrefab != null) return true;
-
-            Debug.LogError("[SessionManager] Runner Prefab not assigned. Assign it in Bootstrap or via inspector.");
+            Debug.LogError("[SessionManager] Runner Prefab not assigned.");
             return false;
         }
 
@@ -179,6 +192,73 @@ namespace FPSMultiplayer.Networking
 
             sceneRef = SceneRef.FromIndex(activeScene.buildIndex);
             return true;
+        }
+
+        private static void LogLoadedScenes()
+        {
+            var active = SceneManager.GetActiveScene();
+            var loaded = new List<string>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.IsValid() && scene.isLoaded)
+                    loaded.Add(scene.name);
+            }
+
+            Debug.Log($"[SessionManager] ActiveScene={active.name}, LoadedScenes=[{string.Join(", ", loaded)}]");
+        }
+
+        private static void UnloadSceneIfLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName)) return;
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded) continue;
+
+                if (scene.name == sceneName)
+                {
+                    SceneManager.UnloadSceneAsync(scene);
+                    break;
+                }
+            }
+        }
+
+        private static void EnsureNonMenuActiveScene(NetworkRunner runner)
+        {
+            var active = SceneManager.GetActiveScene();
+            if (active.IsValid() && active.name != Shared.GameConstants.Scene.MainMenu)
+                return;
+
+            var sceneManager = runner != null ? runner.SceneManager as NetworkSceneManagerDefault : null;
+            if (sceneManager != null)
+            {
+                var multiPeerScene = sceneManager.MultiPeerScene;
+                if (multiPeerScene.IsValid() && multiPeerScene.isLoaded && !string.IsNullOrEmpty(multiPeerScene.name))
+                {
+                    SceneManager.SetActiveScene(multiPeerScene);
+                    return;
+                }
+            }
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded) continue;
+                if (scene.name == Shared.GameConstants.Scene.MainMenu) continue;
+                if (string.Equals(scene.name, "DontDestroyOnLoad", System.StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(scene.name)) continue;
+
+                SceneManager.SetActiveScene(scene);
+                return;
+            }
+
+            var temp = SceneManager.GetSceneByName("TempActiveScene");
+            if (!temp.IsValid())
+                temp = SceneManager.CreateScene("TempActiveScene");
+
+            SceneManager.SetActiveScene(temp);
         }
     }
 }

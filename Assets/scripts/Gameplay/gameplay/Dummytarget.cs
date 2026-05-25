@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using FPSMultiplayer.Gameplay;
 
 [RequireComponent(typeof(HealthSystem))]
 public class DummyTarget : MonoBehaviour

@@ -17,13 +17,11 @@ namespace FPSMultiplayer.Gameplay
         [Header("References")]
         [SerializeField] private Transform _cameraMount;
 
-        // ─── Estado replicado para animaciones ────────────────────────────────
-        // Los clientes leen esto para animar correctamente sin sincronizar el Animator.
         [Networked] public Vector3 NetworkedVelocity  { get; private set; }
         [Networked] public bool    IsGrounded          { get; private set; }
         [Networked] public bool    IsRunning           { get; private set; }
         [Networked] public bool    IsCrouching         { get; private set; }
-        [Networked] public float   LookAngle           { get; private set; } // pitch de cámara
+        [Networked] public float   LookAngle           { get; private set; } 
 
         private NetworkCharacterController _ncc;
         private PlayerInputHandler         _inputHandler;
@@ -37,7 +35,6 @@ namespace FPSMultiplayer.Gameplay
             _inputHandler = GetComponent<PlayerInputHandler>();
             _animator     = GetComponent<PlayerAnimatorController>();
 
-            // Solo el jugador local necesita cámara
             if (HasInputAuthority)
             {
                 var cam = Camera.main;
@@ -65,15 +62,10 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // ─── FixedUpdateNetwork ───────────────────────────────────────────────
-        // Corre en el tick de Fusion. En host: SimulationState Authority.
-        // En cliente con InputAuthority: predicción local.
         public override void FixedUpdateNetwork()
         {
-            // GetInput solo retorna datos si este objeto tiene InputAuthority en este tick
             if (!GetInput(out PlayerInputData input)) return;
 
-            // Movimiento
             var move = new Vector3(input.MoveDirection.x, 0, input.MoveDirection.y);
             move = transform.TransformDirection(move);
 
@@ -93,10 +85,8 @@ namespace FPSMultiplayer.Gameplay
 
             _ncc.Move(_velocity * Runner.DeltaTime);
 
-            // Rotación horizontal (yaw)
             transform.Rotate(Vector3.up, input.LookDelta.x * GameConstants.MouseSensitivity * Runner.DeltaTime);
 
-            // Estado replicado — State Authority lo escribe, todos lo leen
             if (HasStateAuthority)
             {
                 NetworkedVelocity = _velocity;
@@ -107,7 +97,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // Render(): interpola visualmente en clientes remotos, nunca lógica de juego aquí
         public override void Render()
         {
             _animator?.UpdateAnimatorState(NetworkedVelocity, IsGrounded, IsRunning, IsCrouching);
