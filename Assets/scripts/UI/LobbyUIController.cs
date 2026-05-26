@@ -12,7 +12,7 @@ namespace FPSMultiplayer.UI
     {
         [Header("References")]
         [SerializeField] private LobbyManager _lobbyManager;
-        [SerializeField] private Transform _playersRoot;
+        [SerializeField] private RectTransform _playersRoot;
         [SerializeField] private LobbyPlayerRowUI _playerRowPrefab;
 
         [Header("Controls")]
@@ -79,7 +79,8 @@ namespace FPSMultiplayer.UI
 
             foreach (var entry in _lobbyManager.Players)
             {
-                var row = Instantiate(_playerRowPrefab, _playersRoot);
+                //var row = Instantiate(_playerRowPrefab, _playersRoot);
+                var row = Instantiate(_playerRowPrefab, _playersRoot, false);
                 bool canKick = isHost && !entry.IsHost;
                 row.Bind(entry, canKick, OnKickClicked);
                 _rows.Add(row);
@@ -167,12 +168,21 @@ namespace FPSMultiplayer.UI
                 _roomNameText.text = _sessionManager.Runner.SessionInfo.Name;
         }
 
-        private void ClearRows()
+        /*private void ClearRows()
         {
             foreach (var row in _rows)
             {
                 if (row != null)
                     Destroy(row.gameObject);
+            }
+
+            _rows.Clear();
+        }*/
+        private void ClearRows()
+        {
+            foreach (Transform child in _playersRoot)
+            {
+                Destroy(child.gameObject);
             }
 
             _rows.Clear();
