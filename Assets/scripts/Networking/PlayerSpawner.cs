@@ -11,39 +11,38 @@ namespace FPSMultiplayer.Networking
         void SpawnPlayer(NetworkRunner runner, PlayerRef player);
         void DespawnPlayer(NetworkRunner runner, PlayerRef player);
         Transform GetSpawnPoint(PlayerRef player);
+        void SpawnExistingPlayers(NetworkRunner runner);
     }
 
     public class PlayerSpawner : MonoBehaviour, IPlayerSpawner
     {
-        [SerializeField] private NetworkObject _playerPrefab;
+        [SerializeField] private NetworkPrefabRef _playerPrefab;
         [SerializeField] private Transform[] _spawnPoints;
 
         private readonly Dictionary<PlayerRef, NetworkObject> _spawnedPlayers = new();
 
-        private void Start()
+        private void Awake()
         {
             ServiceLocator.Register<IPlayerSpawner>(this);
-
-            if (ServiceLocator.TryGet<ISessionManager>(out var sessionManager))
-            {
-                var runner = sessionManager.Runner;
-                if (runner != null && runner.IsServer)
-                    SpawnExistingPlayers(runner);
-            }
         }
+
+        // Start() eliminado — el spawn lo dispara SessionManager via OnPlayerJoined
+        // y SpawnExistingPlayers via OnSceneLoadDone. Llamarlo aqui causa un doble
+        // spawn con timing incorrecto, antes de que Fusion haya terminado de inicializar.
 
         public void SpawnPlayer(NetworkRunner runner, PlayerRef player)
         {
             if (!runner.IsServer) return;
             if (_spawnedPlayers.ContainsKey(player)) return;
 
-            var spawnPoint = GetSpawnPoint(player);
+            if (_playerPrefab == NetworkPrefabRef.Empty)
+            {
+                Debug.LogError("[PlayerSpawner] Player prefab no asignado en el Inspector.");
+                return;
+            }
 
-            Quaternion spawnRotation = Quaternion.Euler(
-                0f,
-                spawnPoint.eulerAngles.y,
-                0f
-            );
+            var spawnPoint = GetSpawnPoint(player);
+            Quaternion spawnRotation = Quaternion.Euler(0f, spawnPoint.eulerAngles.y, 0f);
 
             var networkPlayer = runner.Spawn(
                 _playerPrefab,
@@ -52,12 +51,21 @@ namespace FPSMultiplayer.Networking
                 player
             );
 
+            if (networkPlayer == null)
+            {
+                Debug.LogError($"[PlayerSpawner] Spawn falló para player {player}. Verifica NetworkObject en el prefab y la Fusion Prefab Table.");
+                return;
+            }
+
             _spawnedPlayers[player] = networkPlayer;
             runner.SetPlayerObject(player, networkPlayer);
             EventBus.Publish(new PlayerSpawned { PlayerId = player.PlayerId });
+            Debug.Log($"[PlayerSpawner] Player {player} spawneado correctamente.");
         }
 
-        private void SpawnExistingPlayers(NetworkRunner runner)
+        // Llamado desde SessionManager.OnSceneLoadDone para spawnear jugadores
+        // que ya estaban conectados antes de que la escena terminara de cargar
+        public void SpawnExistingPlayers(NetworkRunner runner)
         {
             foreach (var player in runner.ActivePlayers)
             {
@@ -73,6 +81,7 @@ namespace FPSMultiplayer.Networking
 
             runner.Despawn(networkObject);
             _spawnedPlayers.Remove(player);
+            Debug.Log($"[PlayerSpawner] Player {player} despawneado.");
         }
 
         public Transform GetSpawnPoint(PlayerRef player)

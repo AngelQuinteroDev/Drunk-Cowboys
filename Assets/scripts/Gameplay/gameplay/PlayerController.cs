@@ -326,7 +326,18 @@ public class PlayerController : NetworkBehaviour
         _shootAnimTimer = 0f;
 
         if (weapon != null) weapon.enabled = true;
-        if (animator != null) animator.SetBool("IsDead", false);
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+            animator.SetBool("IsDead", false);
+            animator.SetBool("isIdle", true);
+            animator.SetBool("IsWalking", false);
+            animator.SetBool("IsRunning", false);
+            animator.SetBool("IsShooting", false);
+            animator.SetBool("IsDrunk", false);
+            animator.SetBool("IsJumping", false);
+        }
         if (HasInputAuthority) LockCursor(true);
     }
 

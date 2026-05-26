@@ -1,23 +1,12 @@
 // ============================================================
 //  NetworkRoundManager — Fusion 2, Player Host Topology
-//
-//  LÓGICA DE RONDAS:
-//    - Ronda inicia cuando el host llama BeginMatch()
-//    - Jugadores se teleportan a spawn points y se resetean
-//    - Ronda termina cuando queda <= 1 jugador vivo
-//    - Se registra la victoria y pausa antes de la siguiente
-//    - Tras maxRounds o al llegar a winsToWin, se declara
-//      ganador de partida y se regresa al lobby
-//
-//  RESPONSABILIDADES:
-//    HOST  : toda la lógica de rondas, conteo de vivos, victoria
-//    TODOS : leer estado replicado para UI via ChangeDetector
 // ============================================================
 using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Core.Events;
+using FPSMultiplayer.Networking;
 
 namespace FPSMultiplayer.Gameplay
 {
@@ -33,14 +22,28 @@ namespace FPSMultiplayer.Gameplay
     public class NetworkRoundManager : NetworkBehaviour
     {
         [Header("Configuracion de Partida")]
-        [SerializeField] private int   maxRounds         = 5;
-        [SerializeField] private int   winsToWin         = 3;
-        [SerializeField] private float countdownTime     = 3f;
-        [SerializeField] private float roundEndDelay     = 4f;
+        [SerializeField] private int   maxRounds          = 5;
+        [SerializeField] private int   winsToWin          = 3;
+        [SerializeField] private float countdownTime      = 3f;
+        [SerializeField] private float roundEndDelay      = 4f;
         [SerializeField] private float returnToLobbyDelay = 6f;
 
         [Header("Spawn Points")]
         [SerializeField] private Transform[] spawnPoints;
+
+        [Header("Auto Start")]
+        [SerializeField] private bool  autoStartMatch   = true;
+        [SerializeField] private float autoStartDelay   = 1f;
+        [SerializeField, Min(1)] private int minPlayersToStart = 2;
+
+        [Header("Debug")]
+        [SerializeField] private bool  logWaitingState    = false;
+        [SerializeField] private float waitingLogInterval = 2f;
+
+        [Header("Alcohol Bottles")]
+        [SerializeField] private NetworkObject alcoholBottlePrefab;
+        [SerializeField] private Transform[]   alcoholSpawnPoints;
+        [SerializeField, Min(0)] private int   bottlesPerRound = 6;
 
         // Estado replicado
         [Networked] public RoundState CurrentState     { get; private set; }
@@ -56,8 +59,14 @@ namespace FPSMultiplayer.Gameplay
         public bool IsRoundActive => CurrentState == RoundState.Active;
 
         private TickTimer      _phaseTimer;
+        private TickTimer      _autoStartTimer;
+        private TickTimer      _waitingLogTimer;
         private ChangeDetector _changes;
-        private readonly HashSet<PlayerRef> _alivePlayers = new();
+        private readonly HashSet<PlayerRef>  _alivePlayers   = new();
+        private readonly List<NetworkObject> _spawnedBottles = new();
+        private readonly List<int>           _bottleSpawnOrder = new();
+        private bool _autoStartArmed;
+        private int  _roundStartAliveCount;
 
         public override void Spawned()
         {
@@ -65,7 +74,15 @@ namespace FPSMultiplayer.Gameplay
             _changes = GetChangeDetector(ChangeDetector.Source.SimulationState);
 
             if (HasStateAuthority)
+            {
                 CurrentState = RoundState.WaitingToStart;
+
+                if (autoStartMatch)
+                {
+                    _autoStartTimer = TickTimer.CreateFromSeconds(Runner, autoStartDelay);
+                    _autoStartArmed = true;
+                }
+            }
 
             EventBus.Subscribe<PlayerDied>(OnPlayerDied);
         }
@@ -81,6 +98,18 @@ namespace FPSMultiplayer.Gameplay
         {
             if (!HasStateAuthority) return;
 
+            if (autoStartMatch && _autoStartArmed && CurrentState == RoundState.WaitingToStart)
+            {
+                if (_autoStartTimer.Expired(Runner) && HasEnoughPlayers())
+                {
+                    BeginMatch();
+                    _autoStartArmed = false;
+                }
+            }
+
+            if (CurrentState == RoundState.WaitingToStart)
+                LogWaitingState();
+
             switch (CurrentState)
             {
                 case RoundState.Countdown:
@@ -90,7 +119,7 @@ namespace FPSMultiplayer.Gameplay
                     break;
 
                 case RoundState.Active:
-                    if (AliveCount <= 1)
+                    if (_roundStartAliveCount > 0 && AliveCount <= 1)
                         DeclareRoundWinner();
                     break;
 
@@ -130,11 +159,15 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // Llamado por el host al cargar la escena Gameplay
         public void BeginMatch()
         {
             if (!HasStateAuthority) return;
             if (CurrentState != RoundState.WaitingToStart) return;
+            if (!HasEnoughPlayers())
+            {
+                ArmAutoStart();
+                return;
+            }
             CurrentRound = 0;
             RoundWins.Clear();
             StartRound();
@@ -142,22 +175,34 @@ namespace FPSMultiplayer.Gameplay
 
         private void StartRound()
         {
+            if (!HasEnoughPlayers())
+            {
+                CurrentState     = RoundState.WaitingToStart;
+                CountdownSeconds = 0f;
+                _phaseTimer      = default;
+                DespawnBottles();
+                ArmAutoStart();
+                return;
+            }
+
             CurrentRound++;
             LastRoundWinner  = PlayerRef.None;
             CurrentState     = RoundState.Countdown;
             CountdownSeconds = countdownTime;
             _phaseTimer      = TickTimer.CreateFromSeconds(Runner, countdownTime);
 
-            RespawnAllPlayers();
+            RespawnAllPlayers();   // <-- ahora resetea health ANTES de mover al player
+            DespawnBottles();
+            SpawnBottles();
             BuildAliveSet();
-            AliveCount = _alivePlayers.Count;
+            AliveCount            = _alivePlayers.Count;
+            _roundStartAliveCount = AliveCount;
 
             Debug.Log($"[RoundManager] Ronda {CurrentRound}/{maxRounds} — countdown {countdownTime}s");
         }
 
         private void DeclareRoundWinner()
         {
-            // Encontrar el ultimo vivo
             PlayerRef winner = PlayerRef.None;
             foreach (var p in _alivePlayers) { winner = p; break; }
 
@@ -180,6 +225,15 @@ namespace FPSMultiplayer.Gameplay
 
         private void StartNextRoundOrEnd()
         {
+            if (!HasEnoughPlayers())
+            {
+                CurrentState     = RoundState.WaitingToStart;
+                CountdownSeconds = 0f;
+                _phaseTimer      = default;
+                ArmAutoStart();
+                return;
+            }
+
             PlayerRef matchWinner = ResolveMatchWinner();
 
             if (matchWinner != PlayerRef.None || CurrentRound >= maxRounds)
@@ -197,16 +251,14 @@ namespace FPSMultiplayer.Gameplay
 
         private PlayerRef ResolveMatchWinner()
         {
-            // Alguien llego a winsToWin
             foreach (var kvp in RoundWins)
                 if (kvp.Value >= winsToWin) return kvp.Key;
 
-            // Se agotaron las rondas: gana el que mas tiene, si no hay empate
             if (CurrentRound >= maxRounds)
             {
-                PlayerRef best  = PlayerRef.None;
-                int bestWins    = -1;
-                bool tie        = false;
+                PlayerRef best = PlayerRef.None;
+                int bestWins   = -1;
+                bool tie       = false;
 
                 foreach (var kvp in RoundWins)
                 {
@@ -227,6 +279,7 @@ namespace FPSMultiplayer.Gameplay
 
         private void ReturnToLobby()
         {
+            DespawnBottles();
             var sceneFlow = ServiceLocator.Get<FPSMultiplayer.Infrastructure.ISceneFlowManager>();
             sceneFlow?.LoadLobbyScene();
         }
@@ -239,8 +292,14 @@ namespace FPSMultiplayer.Gameplay
                 var obj = Runner.GetPlayerObject(player);
                 if (obj == null || !obj.TryGetComponent<PlayerController>(out var pc)) continue;
 
-                Transform spawn = GetSpawnPoint(index++);
+                // ResetForRound hace internamente:
+                //   Teleport → ForceRespawn (dispara OnRespawn en todos los clientes
+                //   via ChangeDetector de HealthSystem) → ResetAmmo → ResetDrunk
+                // No llamar ForceRespawn aqui por separado para evitar doble disparo
+                // del evento OnRespawn que confunde al Animator.
+                Transform spawn = GetSpawnPoint(index);
                 pc.ResetForRound(spawn.position, spawn.rotation);
+                index++;
             }
         }
 
@@ -294,6 +353,117 @@ namespace FPSMultiplayer.Gameplay
         {
             RoundWins.TryGet(player, out int wins);
             return wins;
+        }
+
+        private bool HasEnoughPlayers()
+        {
+            int count = 0;
+
+            if (!ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
+                spawner = UnityEngine.Object.FindFirstObjectByType<PlayerSpawner>();
+
+            if (spawner != null)
+            {
+                foreach (var player in Runner.ActivePlayers)
+                {
+                    if (Runner.GetPlayerObject(player) == null)
+                        spawner.SpawnPlayer(Runner, player);
+                }
+            }
+
+            foreach (var player in Runner.ActivePlayers)
+            {
+                var obj = Runner.GetPlayerObject(player);
+                if (obj != null && obj.IsValid)
+                    count++;
+
+                if (count >= minPlayersToStart)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void LogWaitingState()
+        {
+            if (!logWaitingState) return;
+            if (!_waitingLogTimer.ExpiredOrNotRunning(Runner)) return;
+
+            _waitingLogTimer = TickTimer.CreateFromSeconds(Runner, waitingLogInterval);
+
+            int activePlayers = 0;
+            int playerObjects = 0;
+
+            foreach (var player in Runner.ActivePlayers)
+            {
+                activePlayers++;
+                var obj = Runner.GetPlayerObject(player);
+                if (obj != null && obj.IsValid) playerObjects++;
+            }
+
+            int    missingObjects = activePlayers - playerObjects;
+            string reason;
+
+            if (!autoStartMatch)          reason = "autoStartMatch disabled";
+            else if (!_autoStartArmed)    reason = "autoStart not armed";
+            else if (activePlayers < minPlayersToStart)
+                reason = $"activePlayers({activePlayers}) < minPlayersToStart({minPlayersToStart})";
+            else if (playerObjects < minPlayersToStart)
+                reason = $"playerObjects({playerObjects}) < minPlayersToStart({minPlayersToStart})";
+            else if (!_autoStartTimer.Expired(Runner))
+                reason = $"autoStartDelay running ({autoStartDelay}s)";
+            else
+                reason = "eligible to start; check spawner or authority";
+
+            Debug.Log(
+                $"[RoundManager] WaitingToStart: activePlayers={activePlayers}, " +
+                $"playerObjects={playerObjects}, missingPlayerObjects={missingObjects}, reason={reason}");
+        }
+
+        private void ArmAutoStart()
+        {
+            if (!autoStartMatch) return;
+            _autoStartTimer = TickTimer.CreateFromSeconds(Runner, autoStartDelay);
+            _autoStartArmed = true;
+        }
+
+        private void SpawnBottles()
+        {
+            if (alcoholBottlePrefab == null || alcoholSpawnPoints == null || alcoholSpawnPoints.Length == 0) return;
+            if (bottlesPerRound <= 0) return;
+
+            _bottleSpawnOrder.Clear();
+            for (int i = 0; i < alcoholSpawnPoints.Length; i++)
+                _bottleSpawnOrder.Add(i);
+
+            int count = Mathf.Min(bottlesPerRound, _bottleSpawnOrder.Count);
+            for (int i = 0; i < count; i++)
+            {
+                int swapIndex = Random.Range(i, _bottleSpawnOrder.Count);
+                int chosen    = _bottleSpawnOrder[swapIndex];
+                _bottleSpawnOrder[swapIndex] = _bottleSpawnOrder[i];
+                _bottleSpawnOrder[i]         = chosen;
+
+                Transform spawn = alcoholSpawnPoints[chosen];
+                if (spawn == null) continue;
+
+                var bottle = Runner.Spawn(alcoholBottlePrefab, spawn.position, spawn.rotation);
+                if (bottle != null) _spawnedBottles.Add(bottle);
+            }
+        }
+
+        private void DespawnBottles()
+        {
+            if (!HasStateAuthority) return;
+
+            for (int i = _spawnedBottles.Count - 1; i >= 0; i--)
+            {
+                var bottle = _spawnedBottles[i];
+                if (bottle != null && bottle.IsValid)
+                    Runner.Despawn(bottle);
+            }
+
+            _spawnedBottles.Clear();
         }
     }
 

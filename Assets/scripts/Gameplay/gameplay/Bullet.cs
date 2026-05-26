@@ -1,3 +1,4 @@
+using Fusion;
 using UnityEngine;
 
 namespace FPSMultiplayer.Gameplay
@@ -68,7 +69,12 @@ namespace FPSMultiplayer.Gameplay
                 var target = collision.collider.GetComponentInParent<HealthSystem>();
 
                 if (target != null)
-                    target.TakeDamage(damage);
+                {
+                    if (target.Object != null && target.Object.IsValid)
+                        target.RPC_ApplyDamage(damage, PlayerRef.None);
+                    else
+                        target.TakeDamage(damage);
+                }
             }
 
             if (impactVFXPrefab != null)

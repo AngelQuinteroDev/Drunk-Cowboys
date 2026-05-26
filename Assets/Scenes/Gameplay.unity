@@ -534,6 +534,68 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -7414122531463173040, guid: cd9dabf52ec5ba042b046de9c7164ea0, type: 3}
+--- !u!1 &64576149
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 64576150}
+  m_Layer: 0
+  m_Name: AlcoholSpawn3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &64576150
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 64576149}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 29.7, y: 0, z: 30.85}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &84494654
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 84494655}
+  m_Layer: 0
+  m_Name: AlcoholSpawn8
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &84494655
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 84494654}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -66.8, y: 0, z: 53.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &92233681
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -555,6 +617,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.026105568, y: 0.24339001, z: 0.3924251}
   m_Center: {x: 0.00075523206, y: -0.10529891, z: 0.10913877}
+--- !u!1 &100022541
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 100022542}
+  m_Layer: 0
+  m_Name: AlcoholSpawn7
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &100022542
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100022541}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -32.8, y: 0, z: -43.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &107463552
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2261,6 +2354,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -6906118870504908815, guid: 2b68398019e073e448970d60191ca4e2, type: 3}
+--- !u!1 &259647775
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 259647776}
+  m_Layer: 0
+  m_Name: AlcoholSpawn6
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &259647776
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 259647775}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -6.9, y: 0, z: -18.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &260467192
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4374,6 +4498,47 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.02610556, y: 0.24338995, z: 0.3924251}
   m_Center: {x: 0.00075570773, y: -0.10529889, z: 0.1091464}
+--- !u!1 &465794957
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 465794958}
+  m_Layer: 0
+  m_Name: AlcoholSpawnPoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &465794958
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 465794957}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 982.4, y: 543.28, z: 2.06}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1564945928}
+  - {fileID: 1135114977}
+  - {fileID: 64576150}
+  - {fileID: 928195364}
+  - {fileID: 2027738560}
+  - {fileID: 259647776}
+  - {fileID: 100022542}
+  - {fileID: 84494655}
+  - {fileID: 682360625}
+  - {fileID: 2062425466}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &491583219
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6210,6 +6375,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.023579692, y: 0.028943315, z: 0.480443}
   m_Center: {x: -0.0016845585, y: -0.0038404176, z: 0.2302177}
+--- !u!1 &682360624
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 682360625}
+  m_Layer: 0
+  m_Name: AlcoholSpawn9
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &682360625
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682360624}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.8, y: 0, z: 67.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &687538617
 GameObject:
   m_ObjectHideFlags: 0
@@ -7747,6 +7943,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.02663928, y: 0.08648154, z: 0.038861506}
   m_Center: {x: -0.0033234518, y: 0.007962654, z: -0.009430745}
+--- !u!1 &928195363
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 928195364}
+  m_Layer: 0
+  m_Name: AlcoholSpawn4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &928195364
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928195363}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 24.1, y: 0, z: -61.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &943416773
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10953,6 +11180,37 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1135114976
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1135114977}
+  m_Layer: 0
+  m_Name: AlcoholSpawn2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1135114977
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1135114976}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 30.85}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1136322322
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12780,7 +13038,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bcaa51756c1d06242a658709f194d771, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FPSMultiplayer.Networking.PlayerSpawner
-  _playerPrefab: {fileID: 5427437188389972061, guid: 0ef4cb3b1caf5a34d9f342b0bcdfe132, type: 3}
+  _playerPrefab:
+    RawGuidValue: 0ef4cb3b1caf5a34d9f342b0bcdfe132
   _spawnPoints:
   - {fileID: 1727785372}
   - {fileID: 1533905852}
@@ -14867,6 +15126,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.02336149, y: 0.028065024, z: 0.008106585}
   m_Center: {x: -0.0016807423, y: -0.004454571, z: -0.0059467065}
+--- !u!1 &1564945927
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1564945928}
+  m_Layer: 0
+  m_Name: AlcoholSpawn1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1564945928
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1564945927}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1565671888
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17787,6 +18077,105 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.023846358, y: 0.044154275, z: 0.021245055}
   m_Center: {x: -0.011220464, y: 0.021484667, z: -0.007474363}
+--- !u!1 &1931691191
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1931691194}
+  - component: {fileID: 1931691193}
+  - component: {fileID: 1931691192}
+  m_Layer: 0
+  m_Name: RoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1931691192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1931691191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebc174606b8464a4bbc8171652051fe7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FPSMultiplayer.Gameplay.NetworkRoundManager
+  maxRounds: 5
+  winsToWin: 3
+  countdownTime: 3
+  roundEndDelay: 4
+  returnToLobbyDelay: 6
+  spawnPoints:
+  - {fileID: 1727785372}
+  - {fileID: 1533905852}
+  - {fileID: 943675308}
+  - {fileID: 506807251}
+  - {fileID: 1618717216}
+  autoStartMatch: 1
+  autoStartDelay: 1
+  minPlayersToStart: 1
+  logWaitingState: 1
+  waitingLogInterval: 2
+  alcoholBottlePrefab: {fileID: 4066440596329346219, guid: 5022b5c8f0d65a641b308808c50c5b9d, type: 3}
+  alcoholSpawnPoints:
+  - {fileID: 1564945928}
+  - {fileID: 1135114977}
+  - {fileID: 64576150}
+  - {fileID: 928195364}
+  - {fileID: 2027738560}
+  - {fileID: 259647776}
+  - {fileID: 100022542}
+  - {fileID: 84494655}
+  - {fileID: 682360625}
+  - {fileID: 2062425466}
+  bottlesPerRound: 10
+  _CurrentState: 0
+  _CurrentRound: 0
+  _AliveCount: 0
+  _CountdownSeconds: 0
+  _RoundWins:
+    _items: []
+--- !u!114 &1931691193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1931691191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
+  SortKey: 2398617212
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 1931691192}
+  ForceRemoteRenderTimeframe: 0
+--- !u!4 &1931691194
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1931691191}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 953.2056, y: 543.07184, z: -53.53337}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1938618679 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8664096356759309924, guid: 3d1f06e67591b7840973ba2eb2a5e2db, type: 3}
@@ -20211,6 +20600,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.023361491, y: 0.028065024, z: 0.008106585}
   m_Center: {x: -0.0016845574, y: -0.004454571, z: -0.0059467065}
+--- !u!1 &2027738559
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2027738560}
+  m_Layer: 0
+  m_Name: AlcoholSpawn5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2027738560
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2027738559}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 55.1, y: 0, z: -18.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2039074833
 GameObject:
   m_ObjectHideFlags: 0
@@ -21655,6 +22075,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1292665236546123444, guid: 3d1f06e67591b7840973ba2eb2a5e2db, type: 3}
+--- !u!1 &2062425465
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2062425466}
+  m_Layer: 0
+  m_Name: AlcoholSpawn10
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2062425466
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062425465}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 48.9, y: 0, z: 67.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 465794958}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &2066648231
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -22350,3 +22801,5 @@ SceneRoots:
   - {fileID: 1001942446}
   - {fileID: 590373853}
   - {fileID: 1192031628}
+  - {fileID: 1931691194}
+  - {fileID: 465794958}

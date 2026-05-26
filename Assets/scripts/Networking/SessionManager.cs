@@ -86,7 +86,9 @@ namespace FPSMultiplayer.Networking
             Debug.Log($"[SessionManager] Player joined: {player}");
             EventBus.Publish(new PlayerJoinedEvent { PlayerId = player.PlayerId });
 
-            if (runner.IsServer)
+            // OnPlayerJoined puede dispararse antes de OnSceneLoadDone en el host.
+            // Solo spawnear aqui si la escena ya terminó de cargar (runner esta simulando).
+            if (runner.IsServer && runner.IsRunning)
                 if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
                     spawner.SpawnPlayer(runner, player);
         }
@@ -113,6 +115,13 @@ namespace FPSMultiplayer.Networking
             LogLoadedScenes();
             EnsureNonMenuActiveScene(runner);
             UnloadSceneIfLoaded(Shared.GameConstants.Scene.MainMenu);
+
+            // CLAVE: spawnear aqui los jugadores que ya estaban conectados cuando
+            // la escena terminó de cargar. Este es el momento correcto — Fusion
+            // ya está completamente inicializado y el runner está listo.
+            if (runner.IsServer)
+                if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
+                    spawner.SpawnExistingPlayers(runner);
         }
 
         public void OnSceneLoadStart(NetworkRunner runner)
