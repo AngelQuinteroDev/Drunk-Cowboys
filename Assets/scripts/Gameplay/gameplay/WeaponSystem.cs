@@ -52,11 +52,7 @@ public class WeaponSystem : NetworkBehaviour
     [Networked] private TickTimer FireFxTimer { get; set; }
 
     public int CylinderSize => cylinderSize;
-
-    public bool CanShoot =>
-        !IsReloading &&
-        CurrentAmmo > 0 &&
-        FireCooldown.ExpiredOrNotRunning(Runner);
+    public bool CanShoot => !IsReloading && CurrentAmmo > 0 && FireCooldown.ExpiredOrNotRunning(Runner);
 
     private Vector3 _defaultWeaponPos;
     private DrunkSystem _drunk;
@@ -103,59 +99,43 @@ public class WeaponSystem : NetworkBehaviour
             HandleSway();
     }
 
-    public void ProcessInput(
-        bool fire,
-        bool reload,
-        Vector3 origin,
-        Vector3 direction,
-        PlayerRef owner
-    )
+    /// <summary>
+    /// Returns true if a shot was actually fired this tick.
+    /// </summary>
+    public bool ProcessInput(bool fire, bool reload, Vector3 origin, Vector3 direction, PlayerRef owner)
     {
-        if (!HasStateAuthority) return;
+        if (!HasStateAuthority) return false;
 
         if (reload)
             TryReload();
 
         if (fire)
-            TryShoot(origin, direction, owner);
+            return TryShoot(origin, direction, owner);
+
+        return false;
     }
 
-    private void TryShoot(
-        Vector3 origin,
-        Vector3 direction,
-        PlayerRef owner
-    )
+    private bool TryShoot(Vector3 origin, Vector3 direction, PlayerRef owner)
     {
-        if (IsReloading) return;
-
-        if (!FireCooldown.ExpiredOrNotRunning(Runner)) return;
+        if (IsReloading) return false;
+        if (!FireCooldown.ExpiredOrNotRunning(Runner)) return false;
 
         if (CurrentAmmo <= 0)
         {
             TryReload();
-            return;
+            return false;
         }
 
         CurrentAmmo--;
-
-        FireCooldown =
-            TickTimer.CreateFromSeconds(Runner, 1f / fireRate);
-
+        FireCooldown = TickTimer.CreateFromSeconds(Runner, 1f / fireRate);
         IsFiring = true;
-
-        FireFxTimer =
-            TickTimer.CreateFromSeconds(Runner, 0.12f);
+        FireFxTimer = TickTimer.CreateFromSeconds(Runner, 0.12f);
 
         if (audioSource != null && fireSound != null)
             audioSource.PlayOneShot(fireSound);
 
-        Vector3 shotOrigin =
-            muzzlePoint != null
-            ? muzzlePoint.position
-            : origin;
-
-        Vector3 shotDir =
-            ApplySpread(direction.normalized);
+        Vector3 shotOrigin = muzzlePoint != null ? muzzlePoint.position : origin;
+        Vector3 shotDir = ApplySpread(direction.normalized);
 
         if (shotDelay > 0f)
         {
@@ -163,9 +143,7 @@ public class WeaponSystem : NetworkBehaviour
             _queuedOrigin = shotOrigin;
             _queuedDirection = shotDir;
             _queuedOwner = owner;
-
-            _shotDelayTimer =
-                TickTimer.CreateFromSeconds(Runner, shotDelay);
+            _shotDelayTimer = TickTimer.CreateFromSeconds(Runner, shotDelay);
         }
         else
         {
@@ -174,28 +152,15 @@ public class WeaponSystem : NetworkBehaviour
 
         if (CurrentAmmo <= 0)
             TryReload();
+
+        return true;
     }
 
-    private void FireShot(
-        Vector3 origin,
-        Vector3 direction,
-        PlayerRef owner
-    )
+    private void FireShot(Vector3 origin, Vector3 direction, PlayerRef owner)
     {
-        if (
-            Physics.Raycast(
-                origin,
-                direction,
-                out RaycastHit hit,
-                maxRange,
-                hitMask,
-                QueryTriggerInteraction.Ignore
-            )
-        )
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, maxRange, hitMask, QueryTriggerInteraction.Ignore))
         {
-            var target =
-                hit.collider.GetComponentInParent<HealthSystem>();
-
+            var target = hit.collider.GetComponentInParent<HealthSystem>();
             if (target != null)
                 target.TakeDamage(CalculateDamage(), owner);
         }
@@ -205,37 +170,21 @@ public class WeaponSystem : NetworkBehaviour
 
     private float CalculateDamage()
     {
-        if (_drunk == null)
-            return baseDamage;
-
-        return baseDamage *
-               Mathf.Lerp(
-                   1f,
-                   maxDamageMult,
-                   _drunk.GetDrunkRatio()
-               );
+        if (_drunk == null) return baseDamage;
+        return baseDamage * Mathf.Lerp(1f, maxDamageMult, _drunk.GetDrunkRatio());
     }
 
     private Vector3 ApplySpread(Vector3 direction)
     {
-        float penalty =
-            _drunk != null
-            ? _drunk.GetSpreadPenalty()
-            : 0f;
-
+        float penalty = _drunk != null ? _drunk.GetSpreadPenalty() : 0f;
         float spread = baseSpread + penalty;
-
-        direction +=
-            Random.insideUnitSphere *
-            Mathf.Tan(spread * Mathf.Deg2Rad);
-
+        direction += Random.insideUnitSphere * Mathf.Tan(spread * Mathf.Deg2Rad);
         return direction.normalized;
     }
 
     private async void TryReload()
     {
-        if (IsReloading || CurrentAmmo >= cylinderSize)
-            return;
+        if (IsReloading || CurrentAmmo >= cylinderSize) return;
 
         IsReloading = true;
 
@@ -244,13 +193,11 @@ public class WeaponSystem : NetworkBehaviour
         if (audioSource != null && reloadSound != null)
             audioSource.PlayOneShot(reloadSound);
 
-        float reloadTime =
-            _drunk != null
+        float reloadTime = _drunk != null
             ? baseReloadTime * _drunk.GetReloadTimeMult()
             : baseReloadTime;
 
-        ReloadTimer =
-            TickTimer.CreateFromSeconds(Runner, reloadTime);
+        ReloadTimer = TickTimer.CreateFromSeconds(Runner, reloadTime);
     }
 
     private void FinishReload()
@@ -263,20 +210,14 @@ public class WeaponSystem : NetworkBehaviour
     private void ApplyRecoil()
     {
         if (weaponVisual == null) return;
-
-        weaponVisual.localPosition -=
-            Vector3.forward * recoilKick * 0.01f;
+        weaponVisual.localPosition -= Vector3.forward * recoilKick * 0.01f;
     }
 
     private void HandleSway()
     {
         if (weaponVisual == null) return;
 
-        float mult =
-            _drunk != null
-            ? _drunk.GetSwayMultiplier()
-            : 1f;
-
+        float mult = _drunk != null ? _drunk.GetSwayMultiplier() : 1f;
         float amplitude = baseSway * mult;
         float t = Time.time * swaySpeed;
 
@@ -296,43 +237,28 @@ public class WeaponSystem : NetworkBehaviour
     public void ResetAmmo()
     {
         if (!HasStateAuthority) return;
-
         CurrentAmmo = cylinderSize;
         IsReloading = false;
         ReloadTimer = default;
     }
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
-    private void RPC_PlayFireFx(
-        Vector3 origin,
-        Vector3 direction
-    )
+    private void RPC_PlayFireFx(Vector3 origin, Vector3 direction)
     {
         if (muzzleSmoke != null)
             muzzleSmoke.Emit();
 
         if (bulletPrefab != null)
         {
-            GameObject bullet = Instantiate(
-                bulletPrefab,
-                origin,
-                Quaternion.LookRotation(direction)
-            );
+            GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.LookRotation(direction));
 
             if (bullet.TryGetComponent<Bullet>(out var b))
                 b.Initialize(0f, false);
 
-            Collider bulletCol =
-                bullet.GetComponent<Collider>();
-
-            Collider playerCol =
-                GetComponentInParent<Collider>();
-
+            Collider bulletCol = bullet.GetComponent<Collider>();
+            Collider playerCol = GetComponentInParent<Collider>();
             if (bulletCol != null && playerCol != null)
-                Physics.IgnoreCollision(
-                    bulletCol,
-                    playerCol
-                );
+                Physics.IgnoreCollision(bulletCol, playerCol);
         }
 
         if (HasInputAuthority)

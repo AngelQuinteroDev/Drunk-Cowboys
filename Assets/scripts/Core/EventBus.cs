@@ -26,7 +26,7 @@ namespace FPSMultiplayer.Core
         {
             var type = typeof(T);
             if (!_handlers.TryGetValue(type, out var list)) return;
-            foreach (var handler in list.ToArray()) // ToArray: safe during unsubscribe
+            foreach (var handler in list.ToArray()) 
                 (handler as Action<T>)?.Invoke(eventData);
         }
     }

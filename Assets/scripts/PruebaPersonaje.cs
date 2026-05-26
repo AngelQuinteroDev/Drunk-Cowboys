@@ -4,7 +4,7 @@ public class PruebaPersonaje : MonoBehaviour
 {
     [Header("Configuración de movimiento")]
     [SerializeField] private float velocidad = 5f;
-    [SerializeField] private bool usarFisicas = false; // true = Rigidbody, false = Transform
+    [SerializeField] private bool usarFisicas = false; 
 
     private Rigidbody rb;
 
