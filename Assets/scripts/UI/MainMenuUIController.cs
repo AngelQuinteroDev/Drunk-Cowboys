@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Infrastructure;
@@ -44,6 +45,7 @@ namespace FPSMultiplayer.UI
 
         private void Start()
         {
+            EnsureCursorUnlocked();
             ShowInitPanel();
 
             if (_playerNameInput != null)
@@ -179,6 +181,15 @@ namespace FPSMultiplayer.UI
                 roomName = roomName.Substring(0, 32);
 
             return roomName;
+        }
+
+        private static void EnsureCursorUnlocked()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
         }
     }
 }

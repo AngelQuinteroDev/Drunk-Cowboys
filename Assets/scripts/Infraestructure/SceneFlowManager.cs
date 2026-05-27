@@ -87,7 +87,7 @@ namespace FPSMultiplayer.Infrastructure
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
             ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
-            loadingScreen?.Show("Volviendo al lobby");
+            loadingScreen?.Show("Volviendo al lobby", hideOnNextSceneLoaded: true);
             if (_runner != null && _runner.IsServer)
             {
                 var sceneRef = ResolveSceneRef(_lobbyScene, _lobbySceneName);
