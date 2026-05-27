@@ -66,6 +66,7 @@ public class PlayerController : NetworkBehaviour
     [Networked] public bool IsShooting { get; private set; }
     [Networked] public float LookPitch { get; private set; }
     [Networked] public float Stamina { get; private set; }
+    [Networked] public NetworkString<_32> PlayerName { get; private set; }
 
     [Networked] public int Kills { get; set; }
     [Networked] public int Deaths { get; set; }
@@ -99,6 +100,8 @@ public class PlayerController : NetworkBehaviour
 
         if (HasInputAuthority)
         {
+            string localName = PlayerPrefs.GetString("PlayerName", $"Player_{Object.InputAuthority.PlayerId}");
+            RPC_SetPlayerName(localName);
             SetupNoise();
             AttachLocalCamera();
             LockCursor(true);
@@ -326,7 +329,18 @@ public class PlayerController : NetworkBehaviour
         _shootAnimTimer = 0f;
 
         if (weapon != null) weapon.enabled = true;
-        if (animator != null) animator.SetBool("IsDead", false);
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+            animator.SetBool("IsDead", false);
+            animator.SetBool("isIdle", true);
+            animator.SetBool("IsWalking", false);
+            animator.SetBool("IsRunning", false);
+            animator.SetBool("IsShooting", false);
+            animator.SetBool("IsDrunk", false);
+            animator.SetBool("IsJumping", false);
+        }
         if (HasInputAuthority) LockCursor(true);
     }
 
@@ -408,5 +422,23 @@ public class PlayerController : NetworkBehaviour
     {
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void RPC_SetPlayerName(string playerName)
+    {
+        PlayerName = new NetworkString<_32>(SanitizePlayerName(playerName));
+    }
+
+    private string SanitizePlayerName(string playerName)
+    {
+        if (string.IsNullOrWhiteSpace(playerName))
+            return $"Player_{Object.InputAuthority.PlayerId}";
+
+        playerName = playerName.Trim();
+        if (playerName.Length > 32)
+            playerName = playerName.Substring(0, 32);
+
+        return playerName;
     }
 }

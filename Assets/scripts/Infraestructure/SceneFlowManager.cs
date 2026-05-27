@@ -59,11 +59,15 @@ namespace FPSMultiplayer.Infrastructure
                 return;
             }
 
+            ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
+            loadingScreen?.Show("Iniciando partida");
+
             Debug.Log($"[SceneFlowManager] Request to load gameplay scene. Runner.IsServer={_runner.IsServer}, Runner={_runner}");
 
             if (!_runner.IsServer)
             {
                 Debug.LogWarning("[SceneFlowManager] Only server should invoke scene loads.");
+                loadingScreen?.Hide();
                 return;
             }
 
@@ -71,6 +75,7 @@ namespace FPSMultiplayer.Infrastructure
             if (sceneRef == default)
             {
                 Debug.LogError("[SceneFlowManager] Resolved sceneRef is invalid for gameplay scene.");
+                loadingScreen?.Hide();
                 return;
             }
 
@@ -81,11 +86,21 @@ namespace FPSMultiplayer.Infrastructure
         public void LoadLobbyScene()
         {
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
+            ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
+            loadingScreen?.Show("Volviendo al lobby");
             if (_runner != null && _runner.IsServer)
             {
                 var sceneRef = ResolveSceneRef(_lobbyScene, _lobbySceneName);
-                if (sceneRef == default) return;
+                if (sceneRef == default)
+                {
+                    loadingScreen?.Hide();
+                    return;
+                }
                 _runner.LoadScene(sceneRef);
+            }
+            else
+            {
+                loadingScreen?.Hide();
             }
         }
 
@@ -93,6 +108,10 @@ namespace FPSMultiplayer.Infrastructure
         {
             Debug.Log("[SceneFlowManager] LoadMainMenu invoked.");
             _runner = ServiceLocator.Get<ISessionManager>()?.Runner;
+
+            ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
+            loadingScreen?.Show("Volviendo al menu", hideOnNextSceneLoaded: true);
+
             if (_runner != null)
             {
                 Debug.Log($"[SceneFlowManager] Shutting down runner. IsServer={_runner.IsServer}");

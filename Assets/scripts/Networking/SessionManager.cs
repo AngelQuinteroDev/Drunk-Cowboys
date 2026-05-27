@@ -7,6 +7,7 @@ using Fusion;
 using Fusion.Sockets;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Core.Events;
+using FPSMultiplayer.Infrastructure;
 
 namespace FPSMultiplayer.Networking
 {
@@ -39,6 +40,9 @@ namespace FPSMultiplayer.Networking
             if (!EnsureRunnerPrefab()) return;
             if (!TryGetActiveSceneRef(out var sceneRef)) return;
 
+            ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
+            loadingScreen?.Show("Conectando a la sala");
+
             Runner = Instantiate(_runnerPrefab);
             Runner.AddCallbacks(this);
 
@@ -52,13 +56,19 @@ namespace FPSMultiplayer.Networking
             });
 
             if (!result.Ok)
+            {
+                loadingScreen?.Hide();
                 Debug.LogError($"[SessionManager] CreateRoom failed: {result.ShutdownReason}");
+            }
         }
 
         public async Task JoinRoom(string roomName)
         {
             if (!EnsureRunnerPrefab()) return;
             if (!TryGetActiveSceneRef(out var sceneRef)) return;
+
+            ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen);
+            loadingScreen?.Show("Uniendote a la sala");
 
             Runner = Instantiate(_runnerPrefab);
             Runner.AddCallbacks(this);
@@ -72,7 +82,10 @@ namespace FPSMultiplayer.Networking
             });
 
             if (!result.Ok)
+            {
+                loadingScreen?.Hide();
                 Debug.LogError($"[SessionManager] JoinRoom failed: {result.ShutdownReason}");
+            }
         }
 
         public async Task Shutdown()
@@ -86,7 +99,9 @@ namespace FPSMultiplayer.Networking
             Debug.Log($"[SessionManager] Player joined: {player}");
             EventBus.Publish(new PlayerJoinedEvent { PlayerId = player.PlayerId });
 
-            if (runner.IsServer)
+            // OnPlayerJoined puede dispararse antes de OnSceneLoadDone en el host.
+            // Solo spawnear aqui si la escena ya terminó de cargar (runner esta simulando).
+            if (runner.IsServer && runner.IsRunning)
                 if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
                     spawner.SpawnPlayer(runner, player);
         }
@@ -110,14 +125,25 @@ namespace FPSMultiplayer.Networking
         public void OnSceneLoadDone(NetworkRunner runner)
         {
             Debug.Log($"[SessionManager] OnSceneLoadDone. IsServer={runner.IsServer}, Players={runner.ActivePlayers.Count()}");
+            if (ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen))
+                loadingScreen.Hide();
             LogLoadedScenes();
             EnsureNonMenuActiveScene(runner);
             UnloadSceneIfLoaded(Shared.GameConstants.Scene.MainMenu);
+
+            // CLAVE: spawnear aqui los jugadores que ya estaban conectados cuando
+            // la escena terminó de cargar. Este es el momento correcto — Fusion
+            // ya está completamente inicializado y el runner está listo.
+            if (runner.IsServer)
+                if (ServiceLocator.TryGet<IPlayerSpawner>(out var spawner))
+                    spawner.SpawnExistingPlayers(runner);
         }
 
         public void OnSceneLoadStart(NetworkRunner runner)
         {
             Debug.Log($"[SessionManager] OnSceneLoadStart. IsServer={runner.IsServer}");
+            if (ServiceLocator.TryGet<ILoadingScreenService>(out var loadingScreen))
+                loadingScreen.Show("Cargando escena");
         }
 
         public void OnConnectedToServer(NetworkRunner runner) { }

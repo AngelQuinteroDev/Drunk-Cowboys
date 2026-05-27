@@ -117,6 +117,7 @@ public class PlayerHUD : MonoBehaviour
             _health.OnHealthChanged.RemoveListener(OnHealthChanged);
 
             _health.OnDeath.RemoveListener(OnDeath);
+            _health.OnRespawn.RemoveListener(OnRespawn);
         }
     }
 
@@ -180,6 +181,15 @@ public class PlayerHUD : MonoBehaviour
             deathPanel.SetActive(true);
 
         SetHealthBar(0f);
+    }
+
+    private void OnRespawn()
+    {
+        if (deathPanel != null)
+            deathPanel.SetActive(false);
+
+        if (_health != null)
+            SetHealthBar(_health.GetHealthRatio());
     }
 
     private void UpdateCrosshair()
@@ -266,6 +276,7 @@ public class PlayerHUD : MonoBehaviour
         {
             _health.OnHealthChanged.AddListener(OnHealthChanged);
             _health.OnDeath.AddListener(OnDeath);
+            _health.OnRespawn.AddListener(OnRespawn);
             SetHealthBar(_health.GetHealthRatio());
         }
 

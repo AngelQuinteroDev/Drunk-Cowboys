@@ -36,6 +36,8 @@ namespace FPSMultiplayer.Gameplay
         private float _lastHealth;
         private bool _lastAlive;
 
+        private bool IsNetworked => Object != null && Object.IsValid;
+
         public override void Spawned()
         {
             _drunk = GetComponent<DrunkSystem>();
@@ -86,9 +88,23 @@ namespace FPSMultiplayer.Gameplay
         public void TakeDamage(float rawDamage) =>
             TakeDamage(rawDamage, PlayerRef.None);
 
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        public void RPC_ApplyDamage(float rawDamage, PlayerRef instigator)
+        {
+            TakeDamage(rawDamage, instigator);
+        }
+
         public void TakeDamage(float rawDamage, PlayerRef instigator)
         {
-            if (!HasStateAuthority || !IsAlive) return;
+            bool isNetworked = IsNetworked;
+            if (isNetworked && !HasStateAuthority) return;
+            if (isNetworked && !IsAlive) return;
+
+            if (!isNetworked && !IsAlive && CurrentHealth <= 0f)
+            {
+                CurrentHealth = maxHealth;
+                IsAlive = true;
+            }
 
             float mult = _drunk != null
                 ? resistanceCurve.Evaluate(_drunk.GetDrunkRatio())
