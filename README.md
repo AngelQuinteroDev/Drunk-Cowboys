@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Docs/Images/banner.png" alt="Drunk Cowboys Banner" width="100%"/>
+  <img src="Docs/Images/Banner.png" alt="Drunk Cowboys Banner" width="100%"/>
 </p>
 
 <h1 align="center">🤠 Drunk Cowboys</h1>
