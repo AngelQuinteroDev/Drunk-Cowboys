@@ -79,7 +79,6 @@ namespace FPSMultiplayer.UI
 
             foreach (var entry in _lobbyManager.Players)
             {
-                //var row = Instantiate(_playerRowPrefab, _playersRoot);
                 var row = Instantiate(_playerRowPrefab, _playersRoot, false);
                 bool canKick = isHost && !entry.IsHost;
                 row.Bind(entry, canKick, OnKickClicked);
@@ -167,17 +166,6 @@ namespace FPSMultiplayer.UI
             if (_sessionManager?.Runner != null && _sessionManager.Runner.SessionInfo.IsValid)
                 _roomNameText.text = _sessionManager.Runner.SessionInfo.Name;
         }
-
-        /*private void ClearRows()
-        {
-            foreach (var row in _rows)
-            {
-                if (row != null)
-                    Destroy(row.gameObject);
-            }
-
-            _rows.Clear();
-        }*/
         private void ClearRows()
         {
             foreach (Transform child in _playersRoot)

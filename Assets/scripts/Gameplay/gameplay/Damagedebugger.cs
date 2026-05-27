@@ -2,10 +2,6 @@ using Fusion;
 using UnityEngine;
 using FPSMultiplayer.Gameplay;
 
-/// <summary>
-/// Debugger temporal — clic izquierdo para diagnosticar daño.
-/// Quitar antes de build final.
-/// </summary>
 public class DamageDebugger : NetworkBehaviour
 {
     private HealthSystem _health;
@@ -42,7 +38,7 @@ public class DamageDebugger : NetworkBehaviour
 
         Debug.Log($"[DamageDebugger] === CLICK RAYCAST === origin={origin} dir={dir}");
 
-        // 1) Sin LayerMask ni filtro de triggers — ve absolutamente TODO
+      
         RaycastHit[] allHits = Physics.RaycastAll(origin, dir, 200f, ~0, QueryTriggerInteraction.Collide);
         if (allHits.Length == 0)
         {
@@ -62,7 +58,6 @@ public class DamageDebugger : NetworkBehaviour
             }
         }
 
-        // 2) HealthSystems en escena y prueba de daño por proximidad
         var nearbyHealth = FindObjectsByType<HealthSystem>(FindObjectsSortMode.None);
         Debug.Log($"[DamageDebugger] HealthSystems en escena: {nearbyHealth.Length}");
         foreach (var hs in nearbyHealth)

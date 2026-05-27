@@ -1,6 +1,3 @@
-// ============================================================
-//  NetworkRoundManager — Fusion 2, Player Host Topology
-// ============================================================
 using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
@@ -45,7 +42,6 @@ namespace FPSMultiplayer.Gameplay
         [SerializeField] private Transform[]   alcoholSpawnPoints;
         [SerializeField, Min(0)] private int   bottlesPerRound = 6;
 
-        // Estado replicado
         [Networked] public RoundState CurrentState     { get; private set; }
         [Networked] public int        CurrentRound     { get; private set; }
         [Networked] public int        AliveCount       { get; private set; }
@@ -93,7 +89,6 @@ namespace FPSMultiplayer.Gameplay
             EventBus.Unsubscribe<PlayerDied>(OnPlayerDied);
         }
 
-        // HOST ONLY
         public override void FixedUpdateNetwork()
         {
             if (!HasStateAuthority) return;
@@ -135,7 +130,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // TODOS — detecta cambios y publica eventos para UI
         public override void Render()
         {
             foreach (var change in _changes.DetectChanges(this, out _, out _))
@@ -199,7 +193,7 @@ namespace FPSMultiplayer.Gameplay
             CountdownSeconds = countdownTime;
             _phaseTimer      = TickTimer.CreateFromSeconds(Runner, countdownTime);
 
-            RespawnAllPlayers();   // <-- ahora resetea health ANTES de mover al player
+            RespawnAllPlayers();   
             DespawnBottles();
             SpawnBottles();
             BuildAliveSet();
@@ -300,11 +294,7 @@ namespace FPSMultiplayer.Gameplay
                 var obj = Runner.GetPlayerObject(player);
                 if (obj == null || !obj.TryGetComponent<PlayerController>(out var pc)) continue;
 
-                // ResetForRound hace internamente:
-                //   Teleport → ForceRespawn (dispara OnRespawn en todos los clientes
-                //   via ChangeDetector de HealthSystem) → ResetAmmo → ResetDrunk
-                // No llamar ForceRespawn aqui por separado para evitar doble disparo
-                // del evento OnRespawn que confunde al Animator.
+       
                 Transform spawn = GetSpawnPoint(index);
                 pc.ResetForRound(spawn.position, spawn.rotation);
                 index++;
@@ -510,8 +500,6 @@ namespace FPSMultiplayer.Gameplay
             _spawnedBottles.Clear();
         }
     }
-
-    // Eventos para el EventBus — UI escucha estos
     public readonly struct RoundStateChanged   { public RoundState State  { get; init; } }
     public readonly struct RoundNumberChanged  { public int        Round  { get; init; } }
     public readonly struct RoundWinnerDeclared { public PlayerRef Winner { get; init; } public string WinnerName { get; init; } }

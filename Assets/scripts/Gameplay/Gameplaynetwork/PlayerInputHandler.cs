@@ -1,17 +1,3 @@
-// ============================================================
-//  PlayerInputHandler — Fusion 2 FINAL
-//
-//  USA: _netObject.HasInputAuthority directamente.
-//  No necesita SetAsLocalPlayer() ni flags externos.
-//  NetworkObject.HasInputAuthority es la fuente de verdad
-//  correcta — disponible desde Awake() una vez que Fusion
-//  asigna el objeto.
-//
-//  El guard en OnInput() Y en Update() garantiza que:
-//  - Solo el cliente local envía input real
-//  - Objetos remotos envían PlayerInputData.default (vacío)
-//  - _lookDelta no se acumula en objetos remotos
-// ============================================================
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Fusion;
@@ -92,13 +78,10 @@ namespace FPSMultiplayer.Gameplay
 
         private void OnJumpPerformed(InputAction.CallbackContext _)
         {
-            // Solo registrar salto si somos el jugador local
+       
             if (IsLocalPlayer()) _jumpPending = true;
         }
 
-        // ── Update — solo acumula look delta en el jugador local ─────────────
-        // SIN este guard, todos los prefabs spawneados leen el mismo
-        // mouse/joystick y todos rotan simultáneamente.
         private void Update()
         {
             if (!IsLocalPlayer()) return;
@@ -106,14 +89,14 @@ namespace FPSMultiplayer.Gameplay
                 _lookDelta += _lookAction.ReadValue<Vector2>();
         }
 
-        // ── OnInput — callback de Fusion, una vez por tick ───────────────────
+      
         public void OnInput(NetworkRunner runner, NetworkInput input)
         {
             if (_playerMap == null) return;
 
             if (!IsLocalPlayer())
             {
-                // Objeto remoto: enviar input vacío y limpiar estado
+                
                 _jumpPending = false;
                 _lookDelta   = Vector2.zero;
                 input.Set(default(PlayerInputData));
@@ -139,8 +122,7 @@ namespace FPSMultiplayer.Gameplay
             input.Set(data);
         }
 
-        // Fuente de verdad: NetworkObject.HasInputAuthority
-        // Disponible en runtime una vez que Fusion spawneó el objeto.
+      
         private bool IsLocalPlayer()
         {
             if (_netObject == null)
@@ -151,7 +133,7 @@ namespace FPSMultiplayer.Gameplay
         private static Vector2 ApplyDeadzone(Vector2 v, float dead)
             => v.sqrMagnitude < dead * dead ? Vector2.zero : v;
 
-        // ── Stubs INetworkRunnerCallbacks ────────────────────────────────────
+       
         public void OnPlayerJoined(NetworkRunner r, PlayerRef p) { }
         public void OnPlayerLeft(NetworkRunner r, PlayerRef p) { }
         public void OnShutdown(NetworkRunner r, ShutdownReason reason) { }

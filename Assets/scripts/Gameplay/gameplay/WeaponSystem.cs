@@ -131,8 +131,7 @@ public class WeaponSystem : NetworkBehaviour
         if (audioSource != null && fireSound != null)
             audioSource.PlayOneShot(fireSound);
 
-        // Usar el origin/direction que viene del cliente (ya transformado por PlayerController)
-        // para que el hitscan sea preciso respecto a la cámara del jugador
+        
         Vector3 shotOrigin = muzzlePoint != null ? muzzlePoint.position : origin;
         Vector3 shotDir = ApplySpread(direction.normalized);
 
@@ -157,13 +156,13 @@ public class WeaponSystem : NetworkBehaviour
 
     private void FireShot(Vector3 origin, Vector3 direction, PlayerRef owner)
     {
-        // Hitscan: el daño se aplica aqui en StateAuthority
+
         if (Physics.Raycast(origin, direction, out RaycastHit hit, maxRange, hitMask, QueryTriggerInteraction.Ignore))
         {
             var target = hit.collider.GetComponentInParent<HealthSystem>();
             if (target != null)
             {
-                // Evitar self-hit
+
                 bool isSelf = target.Object != null && target.Object.InputAuthority == owner;
                 if (!isSelf)
                 {
@@ -177,8 +176,7 @@ public class WeaponSystem : NetworkBehaviour
             }
         }
 
-        // FX visual (bala + humo + audio en todos los clientes)
-        // origin y direction se pasan para que la bala visual salga en la posición correcta
+
         RPC_PlayFireFx(origin, direction);
     }
 
@@ -256,8 +254,6 @@ public class WeaponSystem : NetworkBehaviour
         ReloadTimer = default;
     }
 
-    // Solo FX visual — la bala NO aplica daño (applyDamage=false)
-    // El daño ya fue aplicado por el hitscan en FireShot() arriba
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
     private void RPC_PlayFireFx(Vector3 origin, Vector3 direction)
     {
@@ -269,9 +265,8 @@ public class WeaponSystem : NetworkBehaviour
             GameObject bullet = Instantiate(bulletPrefab, origin, Quaternion.LookRotation(direction));
 
             if (bullet.TryGetComponent<Bullet>(out var b))
-                b.Initialize(0f, false); // Solo visual, sin daño
+                b.Initialize(0f, false); 
 
-            // Ignorar colisión con el collider del shooter local
             Collider bulletCol = bullet.GetComponent<Collider>();
             Collider playerCol = GetComponentInParent<Collider>();
             if (bulletCol != null && playerCol != null)

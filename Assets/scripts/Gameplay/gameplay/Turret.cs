@@ -1,13 +1,3 @@
-// ============================================================
-//  Turret — Fusion 2, Player Host Topology
-//  RESPONSABILIDADES:
-//    HOST  : detección de jugadores, rotación autoritaria,
-//            lógica de disparo, aplicar daño via HealthSystem
-//    TODOS : efectos visuales de color en Render()
-//
-//  La torreta es un NetworkObject en escena con StateAuthority
-//  cedida al host. Su rotación se replica via NetworkBehaviour.
-// ============================================================
 using Fusion;
 using UnityEngine;
 
@@ -29,7 +19,7 @@ namespace FPSMultiplayer.Gameplay
 
         [Header("Shooting — Hitscan server-side")]
         [SerializeField] private Transform muzzle;
-        [SerializeField] private GameObject bulletVFXPrefab;   // Solo visual
+        [SerializeField] private GameObject bulletVFXPrefab;   
         [SerializeField] private float     fireInterval   = 1.5f;
         [SerializeField] private float     damagePerShot  = 10f;
         [SerializeField] private float     maxRange       = 80f;
@@ -41,20 +31,17 @@ namespace FPSMultiplayer.Gameplay
         [SerializeField] private Color    alertColor  = Color.yellow;
         [SerializeField] private Color    attackColor = Color.red;
 
-        // ── Estado replicado ────────────────────────────────────────────────
         [Networked] private TurretStateNet NetState   { get; set; }
         [Networked] public  bool           IsDestroyed { get; private set; }
 
         private enum TurretStateNet : byte { Idle, Attacking }
 
-        // ── Estado local (solo host) ────────────────────────────────────────
         private Transform      _target;
         private float          _fireTimer;
         private HealthSystem   _health;
         private MaterialPropertyBlock _mpb;
         private ChangeDetector _changes;
 
-        // ── Spawned ─────────────────────────────────────────────────────────
         public override void Spawned()
         {
             _health  = GetComponent<HealthSystem>();
@@ -65,7 +52,6 @@ namespace FPSMultiplayer.Gameplay
                 _health.OnDeath.AddListener(OnDeath);
         }
 
-        // ── FixedUpdateNetwork — HOST ONLY ──────────────────────────────────
         public override void FixedUpdateNetwork()
         {
             if (!HasStateAuthority)  return;
@@ -76,7 +62,6 @@ namespace FPSMultiplayer.Gameplay
             UpdateStateMachine();
         }
 
-        // ── Render — TODOS ──────────────────────────────────────────────────
         public override void Render()
         {
             foreach (var change in _changes.DetectChanges(this, out _, out _))
@@ -88,7 +73,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // ── Detección — HOST ONLY ───────────────────────────────────────────
         private void DetectPlayer()
         {
             Collider[] hits = Physics.OverlapSphere(
@@ -110,7 +94,7 @@ namespace FPSMultiplayer.Gameplay
 
                 if (Physics.Linecast(eyePos, targetPos, out RaycastHit lineHit))
                 {
-                    // Solo acepta si lo que bloqueó es el propio jugador
+                   
                     if (lineHit.collider.GetComponentInParent<HealthSystem>() != health)
                         continue;
                 }
@@ -120,7 +104,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // ── Máquina de estados — HOST ONLY ─────────────────────────────────
         private void UpdateStateMachine()
         {
             if (_target == null)
@@ -140,7 +123,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // ── Rotación — HOST (replicada vía transform de NetworkObject) ──────
         private void RotateTowardTarget()
         {
             if (rotatingHead == null || _target == null) return;
@@ -160,9 +142,6 @@ namespace FPSMultiplayer.Gameplay
             );
         }
 
-        // ── Disparo Hitscan — HOST ONLY ─────────────────────────────────────
-        // El host hace el raycast autoritario y aplica daño directamente.
-        // El VFX se envía a todos vía RPC.
         private void FireHitscan()
         {
             if (muzzle == null || _target == null) return;
@@ -174,7 +153,6 @@ namespace FPSMultiplayer.Gameplay
                 QueryTriggerInteraction.Ignore))
             {
                 var target = hit.collider.GetComponentInParent<HealthSystem>();
-                // PlayerRef.None porque la torreta no es un jugador
                 target?.TakeDamage(damagePerShot, PlayerRef.None);
 
                 RPC_PlayFireVFX(origin, hit.point);
@@ -185,7 +163,6 @@ namespace FPSMultiplayer.Gameplay
             }
         }
 
-        // ── RPC de VFX — StateAuthority → All ──────────────────────────────
         [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
         private void RPC_PlayFireVFX(Vector3 origin, Vector3 hitPoint)
         {
@@ -197,7 +174,6 @@ namespace FPSMultiplayer.Gameplay
             Destroy(visual, 3f);
         }
 
-        // ── Color visual — TODOS ────────────────────────────────────────────
         private void UpdateColor()
         {
             if (bodyRenderer == null) return;
@@ -227,8 +203,6 @@ namespace FPSMultiplayer.Gameplay
                 bodyRenderer.SetPropertyBlock(_mpb);
             }
         }
-
-        // ── Gizmos ──────────────────────────────────────────────────────────
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;

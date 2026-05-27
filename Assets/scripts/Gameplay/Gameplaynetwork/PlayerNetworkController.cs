@@ -17,7 +17,6 @@ namespace FPSMultiplayer.Gameplay
         [Header("References")]
         [SerializeField] private Transform _cameraMount;
 
-        // Pitch acumulado solo en StateAuthority para sincronizar la cámara
         [Networked] private float _networkPitch { get; set; }
 
         [Networked] public Vector3 NetworkedVelocity  { get; private set; }
@@ -33,7 +32,6 @@ namespace FPSMultiplayer.Gameplay
         private Vector3                    _velocity;
         private bool                       _inputRegistered;
 
-        // Pitch local (solo para el cliente con InputAuthority)
         private float _localPitch;
 
         public override void Spawned()
@@ -74,7 +72,6 @@ namespace FPSMultiplayer.Gameplay
         {
             if (!GetInput(out PlayerInputData input)) return;
 
-            // ── Movimiento ────────────────────────────────────────────────
             var move = new Vector3(input.MoveDirection.x, 0, input.MoveDirection.y);
             move = transform.TransformDirection(move);
 
@@ -91,13 +88,8 @@ namespace FPSMultiplayer.Gameplay
                 _velocity.y = _jumpForce;
 
             _ncc.Move(_velocity * Runner.DeltaTime);
-
-            // ── Rotación Yaw (horizontal — todo el cuerpo gira) ───────────
             transform.Rotate(Vector3.up, input.LookDelta.x * GameConstants.MouseSensitivity * Runner.DeltaTime);
 
-            // ── Pitch (vertical — solo la cámara/muzzle) ─────────────────
-            // Acumular pitch en StateAuthority para que el servidor
-            // calcule la dirección correcta del disparo
             if (HasStateAuthority)
             {
                 _networkPitch = Mathf.Clamp(
@@ -109,10 +101,8 @@ namespace FPSMultiplayer.Gameplay
                     _cameraMount.localRotation = Quaternion.Euler(_networkPitch, 0f, 0f);
             }
 
-            // ── Disparo: dirección desde cameraMount del servidor ─────────
             if (_weapon != null && HasStateAuthority)
             {
-                // Obtener muzzle position y la dirección de apuntado real
                 Vector3 shootOrigin = _cameraMount != null
                     ? _cameraMount.position
                     : transform.position + Vector3.up * 1.6f;
@@ -130,7 +120,6 @@ namespace FPSMultiplayer.Gameplay
                 );
             }
 
-            // ── Estado sincronizado ───────────────────────────────────────
             if (HasStateAuthority)
             {
                 NetworkedVelocity = _velocity;
@@ -145,7 +134,6 @@ namespace FPSMultiplayer.Gameplay
         {
             _animator?.UpdateAnimatorState(NetworkedVelocity, IsGrounded, IsRunning, IsCrouching);
 
-            // Aplicar pitch en el cliente local para respuesta inmediata
             if (HasInputAuthority && _cameraMount != null)
             {
                 _localPitch = Mathf.Clamp(

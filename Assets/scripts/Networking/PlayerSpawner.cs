@@ -26,9 +26,6 @@ namespace FPSMultiplayer.Networking
             ServiceLocator.Register<IPlayerSpawner>(this);
         }
 
-        // Start() eliminado — el spawn lo dispara SessionManager via OnPlayerJoined
-        // y SpawnExistingPlayers via OnSceneLoadDone. Llamarlo aqui causa un doble
-        // spawn con timing incorrecto, antes de que Fusion haya terminado de inicializar.
 
         public void SpawnPlayer(NetworkRunner runner, PlayerRef player)
         {
@@ -63,8 +60,6 @@ namespace FPSMultiplayer.Networking
             Debug.Log($"[PlayerSpawner] Player {player} spawneado correctamente.");
         }
 
-        // Llamado desde SessionManager.OnSceneLoadDone para spawnear jugadores
-        // que ya estaban conectados antes de que la escena terminara de cargar
         public void SpawnExistingPlayers(NetworkRunner runner)
         {
             foreach (var player in runner.ActivePlayers)

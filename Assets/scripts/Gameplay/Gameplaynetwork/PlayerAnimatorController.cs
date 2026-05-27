@@ -37,17 +37,15 @@ namespace FPSMultiplayer.Gameplay
             _health.OnRespawn.RemoveListener(OnRespawn);
         }
 
-        // Llamado por HealthSystem.OnDeath
         private void OnDeath()
         {
             _animator.SetBool(_isAliveHash, false);
             _animator.SetTrigger("Death");
         }
 
-        // Llamado por HealthSystem.OnRespawn
         private void OnRespawn()
         {
-            // Limpiar la maquina de estados para que no herede la pose de muerte.
+
             _animator.Rebind();
             _animator.Update(0f);
 
@@ -57,7 +55,6 @@ namespace FPSMultiplayer.Gameplay
             _animator.SetBool(_isAliveHash, true);
             _animator.SetTrigger("Respawn");
 
-            // Reaplicar el estado base de locomocion despues del Rebind.
             _animator.SetFloat(_speedHash,     0f);
             _animator.SetBool(_isGroundedHash, true);
             _animator.SetBool(_isRunningHash,  false);
@@ -68,7 +65,6 @@ namespace FPSMultiplayer.Gameplay
 
         public void UpdateAnimatorState(Vector3 velocity, bool isGrounded, bool isRunning, bool isCrouching)
         {
-            // No actualizar estado de movimiento si el jugador esta muerto
             if (_health != null && !_health.IsAlive) return;
 
             float speed = new Vector2(velocity.x, velocity.z).magnitude;

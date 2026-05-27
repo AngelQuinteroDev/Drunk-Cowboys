@@ -27,7 +27,6 @@ namespace FPSMultiplayer.Lobby
             if (HasStateAuthority)
                 SyncPlayersFromRunner();
 
-            // Notify UI on all peers that the lobby list should be refreshed (initial state)
             EventBus.Publish(new LobbyListUpdated());
         }
 
