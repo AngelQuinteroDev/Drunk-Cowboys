@@ -42,7 +42,7 @@ namespace FPSMultiplayer.Networking
             }
 
             var spawnPoint = GetSpawnPoint(player);
-            Quaternion spawnRotation = Quaternion.Euler(0f, spawnPoint.eulerAngles.y, 0f);
+            Quaternion spawnRotation = GetUprightRotation(spawnPoint.rotation);
 
             var networkPlayer = runner.Spawn(
                 _playerPrefab,
@@ -91,6 +91,15 @@ namespace FPSMultiplayer.Networking
 
             int index = player.PlayerId % _spawnPoints.Length;
             return _spawnPoints[index];
+        }
+
+        private static Quaternion GetUprightRotation(Quaternion sourceRotation)
+        {
+            Vector3 planarForward = Vector3.ProjectOnPlane(sourceRotation * Vector3.forward, Vector3.up);
+            if (planarForward.sqrMagnitude < 0.0001f)
+                planarForward = Vector3.forward;
+
+            return Quaternion.LookRotation(planarForward.normalized, Vector3.up);
         }
     }
 }
