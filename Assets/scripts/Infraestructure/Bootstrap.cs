@@ -29,6 +29,10 @@ namespace FPSMultiplayer.Infrastructure
             DontDestroyOnLoad(sceneFlow.gameObject);
             ServiceLocator.Register<ISceneFlowManager>(sceneFlow);
 
+            var loadingScreen = new GameObject("LoadingScreenService").AddComponent<LoadingScreenService>();
+            DontDestroyOnLoad(loadingScreen.gameObject);
+            ServiceLocator.Register<ILoadingScreenService>(loadingScreen);
+
             var matchManager = new GameObject("MatchManager").AddComponent<MatchManager>();
             DontDestroyOnLoad(matchManager.gameObject);
             ServiceLocator.Register<IMatchManager>(matchManager);

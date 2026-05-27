@@ -150,10 +150,18 @@ namespace FPSMultiplayer.Gameplay
                         break;
                     case nameof(LastRoundWinner):
                         if (LastRoundWinner != PlayerRef.None)
-                            EventBus.Publish(new RoundWinnerDeclared { Winner = LastRoundWinner });
+                                EventBus.Publish(new RoundWinnerDeclared
+                                {
+                                    Winner = LastRoundWinner,
+                                    WinnerName = ResolvePlayerDisplayName(LastRoundWinner)
+                                });
                         break;
                     case nameof(MatchWinner):
-                        EventBus.Publish(new MatchWinnerDeclared { Winner = MatchWinner });
+                            EventBus.Publish(new MatchWinnerDeclared
+                            {
+                                Winner = MatchWinner,
+                                WinnerName = ResolveMatchWinnerDisplayName(MatchWinner)
+                            });
                         break;
                 }
             }
@@ -220,7 +228,7 @@ namespace FPSMultiplayer.Gameplay
             }
 
             _phaseTimer = TickTimer.CreateFromSeconds(Runner, roundEndDelay);
-            Debug.Log($"[RoundManager] Ronda {CurrentRound} terminada. Ganador: {winner}");
+            Debug.Log($"[RoundManager] Ronda {CurrentRound} terminada. Ganador: {ResolvePlayerDisplayName(winner)}");
         }
 
         private void StartNextRoundOrEnd()
@@ -241,7 +249,7 @@ namespace FPSMultiplayer.Gameplay
                 MatchWinner  = matchWinner;
                 CurrentState = RoundState.MatchEnded;
                 _phaseTimer  = TickTimer.CreateFromSeconds(Runner, returnToLobbyDelay);
-                Debug.Log($"[RoundManager] Partida terminada. Ganador: {matchWinner}");
+                Debug.Log($"[RoundManager] Partida terminada. Ganador: {ResolveMatchWinnerDisplayName(matchWinner)}");
             }
             else
             {
@@ -353,6 +361,42 @@ namespace FPSMultiplayer.Gameplay
         {
             RoundWins.TryGet(player, out int wins);
             return wins;
+        }
+
+        public string GetPlayerDisplayName(PlayerRef playerRef)
+        {
+            return ResolvePlayerDisplayName(playerRef);
+        }
+
+        private string ResolveMatchWinnerDisplayName(PlayerRef playerRef)
+        {
+            if (playerRef == PlayerRef.None)
+                return "Empate";
+
+            return ResolvePlayerDisplayName(playerRef);
+        }
+
+        private string ResolvePlayerDisplayName(PlayerRef playerRef)
+        {
+            if (playerRef == PlayerRef.None)
+                return "Sin ganador";
+
+            var playerObject = Runner.GetPlayerObject(playerRef);
+            if (playerObject != null && playerObject.TryGetComponent<PlayerController>(out var playerController))
+            {
+                string playerName = playerController.PlayerName.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(playerName))
+                    return playerName;
+            }
+
+            if (playerObject != null && playerObject.TryGetComponent<NetworkPlayerData>(out var playerData))
+            {
+                string playerName = playerData.PlayerName.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(playerName))
+                    return playerName;
+            }
+
+            return $"Player_{playerRef.PlayerId}";
         }
 
         private bool HasEnoughPlayers()
@@ -470,6 +514,6 @@ namespace FPSMultiplayer.Gameplay
     // Eventos para el EventBus — UI escucha estos
     public readonly struct RoundStateChanged   { public RoundState State  { get; init; } }
     public readonly struct RoundNumberChanged  { public int        Round  { get; init; } }
-    public readonly struct RoundWinnerDeclared { public PlayerRef  Winner { get; init; } }
-    public readonly struct MatchWinnerDeclared { public PlayerRef  Winner { get; init; } }
+    public readonly struct RoundWinnerDeclared { public PlayerRef Winner { get; init; } public string WinnerName { get; init; } }
+    public readonly struct MatchWinnerDeclared { public PlayerRef Winner { get; init; } public string WinnerName { get; init; } }
 }

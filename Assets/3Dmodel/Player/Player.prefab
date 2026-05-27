@@ -141,6 +141,8 @@ GameObject:
   - component: {fileID: 6438720638397659214}
   - component: {fileID: 12900263628639874}
   - component: {fileID: 2431571828624689280}
+  - component: {fileID: 9217086958799610507}
+  - component: {fileID: -1383540011950280339}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -230,6 +232,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  audioSource: {fileID: 0}
+  damageSound: {fileID: 0}
   OnHealthChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -239,6 +243,8 @@ MonoBehaviour:
   OnRespawn:
     m_PersistentCalls:
       m_Calls: []
+  _CurrentHealth: 0
+  _IsAlive: 0
 --- !u!114 &12900263628639874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -350,6 +356,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  drunkLoopSource: {fileID: 0}
+  drunkLoop: {fileID: 0}
+  startDrunkAudioAt: 0.35
   OnDrunkLevelChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -359,6 +368,7 @@ MonoBehaviour:
   OnMaxDrunk:
     m_PersistentCalls:
       m_Calls: []
+  _CurrentDrunkLevel: 0
 --- !u!114 &2431571828624689280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -373,9 +383,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   walkSpeed: 4
   sprintSpeed: 7
-  crouchSpeed: 2
   jumpForce: 5
   gravity: -20
+  maxStamina: 100
+  staminaDrain: 25
+  staminaRecovery: 15
   headPivot: {fileID: 6179902989987285991}
   mouseSensitivity: 8
   verticalLookMin: -85
@@ -386,17 +398,69 @@ MonoBehaviour:
   aimMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  standHeight: 1.8
-  crouchHeight: 1
-  crouchTransitionSpeed: 10
-  coverCheckDistance: 1.2
-  coverLayer:
-    serializedVersion: 2
-    m_Bits: 64
+  animator: {fileID: 0}
+  drunkThreshold: 0.3
+  shootAnimDuration: 0.8
   virtualCamera: {fileID: 6397384263916724446}
   drunkNoiseProfile: {fileID: 11400000, guid: 7f05d118dc919584ba5fd03e4a2ba6a0, type: 2}
   maxNoiseAmplitude: 2.5
   maxNoiseFrequency: 1.5
+  _NetworkedVelocity: {x: 0, y: 0, z: 0}
+  _IsGrounded: 0
+  _IsSprinting: 0
+  _IsMoving: 0
+  _IsShooting: 0
+  _LookPitch: 0
+  _Stamina: 0
+  _PlayerName:
+    _length: 0
+    _data:
+      Data: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  _Kills: 0
+  _Deaths: 0
+  _RoundWins: 0
+--- !u!114 &9217086958799610507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5020452548916509383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 378411a89480da345945c2f888327a2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Unity::Fusion.NetworkCharacterController
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  gravity: -20
+  jumpImpulse: 8
+  acceleration: 10
+  braking: 10
+  maxSpeed: 2
+  rotationSpeed: 15
+--- !u!114 &-1383540011950280339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5020452548916509383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
+  SortKey: 699720668
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 6438720638397659214}
+  - {fileID: 12900263628639874}
+  - {fileID: 2431571828624689280}
+  - {fileID: 9217086958799610507}
+  - {fileID: 1152185640069633975}
+  ForceRemoteRenderTimeframe: 0
 --- !u!1 &7665312746450159117
 GameObject:
   m_ObjectHideFlags: 0
