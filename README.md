@@ -2,7 +2,7 @@
   <img src="Docs/Images/Banner.png" alt="Drunk Cowboys Banner" width="100%"/>
 </p>
 
-<h1 align="center">🤠 Drunk Cowboys</h1>
+<h1 align="center">Drunk Cowboys</h1>
 
 <p align="center">
   <b>A chaotic multiplayer FPS where drunken cowboys settle the score in the Wild West</b>
@@ -472,25 +472,22 @@ Real-time in-game overlay showing:
 
 ## Screenshots
 
-> *Add screenshots to `Docs/Images/` and they will render automatically.*
-
 ### Main Menu
-![Main Menu](Docs/Images/main-menu.png)
+![Main Menu](Docs/Images/MainMenu.png)
+
+### Rooms
+![Rooms](Docs/Images/Rooms.png)
 
 ### Lobby
-![Lobby](Docs/Images/lobby.png)
+![Lobby](Docs/Images/Lobby.png)
 
 ### Gameplay
-![Gameplay](Docs/Images/gameplay.png)
+![Gameplay](Docs/Images/Gameplay.png)
+![Gameplay](Docs/Images/Gameplay2.png)
 
-### HUD
-![HUD](Docs/Images/hud.png)
-
-### Multiplayer Room
-![Multiplayer](Docs/Images/multiplayer.png)
 
 ### Victory Screen
-![Victory](Docs/Images/victory.png)
+![Victory](Docs/Images/Victory.png)
 
 ---
 
@@ -581,7 +578,7 @@ Real-time in-game overlay showing:
 
 | Parameter | Value | Location |
 |-----------|-------|----------|
-| Max Players | 8 | `GameConstants.Network.MaxPlayers` |
+| Max Players | 5 | `GameConstants.Network.MaxPlayers` |
 | Tick Rate | 60 Hz | `GameConstants.Network.TickRate` |
 | Default Port | 27015 | `GameConstants.Network.DefaultPort` |
 | Peer Mode | Multiple | `NetworkProjectConfig.fusion` |
@@ -616,6 +613,12 @@ Real-time in-game overlay showing:
 
 <p align="center">
   Made by <a href="https://github.com/AngelQuinteroDev">AngelQuinteroDev</a>
+</p>
+<p align="center">
+  Made by <a href="https://github.com/AngelyyP">Angely Parra</a>
+</p>
+<p align="center">
+  Made by <a href="https://github.com/Keres1232">Keres</a>
 </p>
 
 <p align="center">
