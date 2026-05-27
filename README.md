@@ -19,32 +19,31 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-In_Development-yellow?style=flat-square" alt="Status"/>
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License"/>
-  <img src="https://img.shields.io/badge/Players-Up_to_8-green?style=flat-square" alt="Players"/>
+  <img src="https://img.shields.io/badge/Players-Up_to_5-green?style=flat-square" alt="Players"/>
 </p>
 
 ---
 
-## 📖 Overview
+## Overview
 
 **Drunk Cowboys** is a multiplayer first-person shooter built in Unity, where players take on the role of cowboys in a Wild West town — with a twist: **alcohol is both a weapon and a curse**.
 
 Players compete in round-based matches using revolvers in a dusty Western environment. Scattered across the map are **whiskey bottles** that increase a player's **drunk level**. Getting drunk increases **damage output** and grants **damage resistance**, but progressively impairs **aim accuracy**, **movement speed**, **weapon sway**, and **reload time** — creating a high-risk, high-reward gameplay loop.
 
-> 🎯 **Core Concept**: The drunker you get, the harder you hit — but the worse you shoot.
+> **Core Concept**: The drunker you get, the harder you hit — but the worse you shoot.
 
 ### Key Gameplay Pillars
 
 | Pillar | Description |
 |--------|-------------|
-| 🥃 **Risk vs. Reward** | Alcohol boosts damage but degrades aim, movement, and reload speed |
-| 🔫 **Round-Based Combat** | Best-of-N rounds with configurable win conditions |
-| 🌐 **Online Multiplayer** | Up to 8 players via Photon Fusion 2 with Host/Client model |
-| 🏜️ **Wild West Theme** | Saloons, banks, carriages, cacti, and desert skyboxes |
+| **Risk vs. Reward** | Alcohol boosts damage but degrades aim, movement, and reload speed |
+| **Round-Based Combat** | Best-of-N rounds with configurable win conditions |
+| **Online Multiplayer** | Up to 8 players via Photon Fusion 2 with Host/Client model |
+| **Wild West Theme** | Saloons, banks, carriages, cacti, and desert skyboxes |
 
 ---
 
-## 🛠️ Technologies
+## Technologies
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
@@ -62,7 +61,7 @@ Players compete in round-based matches using revolvers in a dusty Western enviro
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Drunk Cowboys follows a **Service Locator + Event Bus** architecture with clear separation between infrastructure, networking, lobby, gameplay, and UI layers.
 
@@ -70,11 +69,11 @@ Drunk Cowboys follows a **Service Locator + Event Bus** architecture with clear 
 
 ```mermaid
 graph TD
-    subgraph Bootstrap ["🔧 Bootstrap Scene"]
+    subgraph Bootstrap [" Bootstrap Scene"]
         B[Bootstrap.cs]
     end
 
-    subgraph Services ["💼 Persistent Services (DontDestroyOnLoad)"]
+    subgraph Services [" Persistent Services (DontDestroyOnLoad)"]
         SL[ServiceLocator]
         SM[SessionManager]
         SFM[SceneFlowManager]
@@ -83,7 +82,7 @@ graph TD
         GL[GameLogger]
     end
 
-    subgraph Core ["⚙️ Core"]
+    subgraph Core ["Core"]
         EB[EventBus]
         GE[Game Events]
     end
@@ -167,7 +166,7 @@ graph LR
 
 ---
 
-## 🌐 Multiplayer Flow
+## Multiplayer Flow
 
 ### Networking Architecture
 
@@ -175,9 +174,9 @@ Drunk Cowboys uses **Photon Fusion 2** in **Host/Client** mode with **Multiple P
 
 ```mermaid
 sequenceDiagram
-    participant Host as 🖥️ Host
-    participant Fusion as ☁️ Photon Fusion
-    participant Client as 💻 Client
+    participant Host as Host
+    participant Fusion as Photon Fusion
+    participant Client as Client
 
     Host->>Fusion: StartGame(GameMode.Host, roomName)
     Client->>Fusion: StartGame(GameMode.Client, roomName)
@@ -229,7 +228,7 @@ sequenceDiagram
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 Assets/
@@ -360,9 +359,9 @@ Assets/
 
 ---
 
-## 🎮 Gameplay Systems
+## Gameplay Systems
 
-### 🥃 Drunk System
+### Drunk System
 
 The core mechanic that sets Drunk Cowboys apart. Players collect **whiskey bottles** scattered across the map to increase their drunk level.
 
@@ -377,12 +376,12 @@ The core mechanic that sets Drunk Cowboys apart. Players collect **whiskey bottl
 Effects are driven by `AnimationCurve` fields, allowing designers to fine-tune each penalty independently in the Inspector.
 
 **Additional drunk effects:**
-- 🎯 **Aim rig degradation** — `DrunkAimModifier` reduces bone weights on head, neck, and spine aim constraints
-- 📸 **Camera noise** — Cinemachine Perlin noise amplitude/frequency scales with drunk ratio
-- 🔊 **Audio feedback** — Drunk breathing loop fades in above 35% drunk level
-- ⏱️ **Natural sobering** — Drunk level decays over time at a configurable rate
+- **Aim rig degradation** — `DrunkAimModifier` reduces bone weights on head, neck, and spine aim constraints
+- **Camera noise** — Cinemachine Perlin noise amplitude/frequency scales with drunk ratio
+- **Audio feedback** — Drunk breathing loop fades in above 35% drunk level
+- **Natural sobering** — Drunk level decays over time at a configurable rate
 
-### 🔫 Weapon System (Revolver)
+### Weapon System (Revolver)
 
 | Stat | Value |
 |------|-------|
@@ -400,7 +399,7 @@ Effects are driven by `AnimationCurve` fields, allowing designers to fine-tune e
 - **Weapon sway** — Idle sway amplitude multiplied by drunk ratio
 - **Auto-reload** — Triggers when cylinder empties
 
-### ❤️ Health System
+### Health System
 
 - **Max HP**: 100
 - **Drunk resistance**: Higher drunk levels reduce incoming damage via `AnimationCurve` (100% → 35% multiplier)
@@ -408,7 +407,7 @@ Effects are driven by `AnimationCurve` fields, allowing designers to fine-tune e
 - **Kill/Death tracking**: `Kills` and `Deaths` networked on `PlayerController`
 - **Events**: `OnHealthChanged`, `OnDeath`, `OnRespawn` via `UnityEvent`
 
-### 🏟️ Round System (`NetworkRoundManager`)
+### Round System (`NetworkRoundManager`)
 
 ```mermaid
 stateDiagram-v2
@@ -433,7 +432,7 @@ stateDiagram-v2
 | Min players to start | 2 |
 | Bottles per round | 6 |
 
-### 🏗️ Turret Hazard
+### Turret Hazard
 
 AI-controlled turret placed in the arena:
 - **Detection** — Sphere overlap + FOV check + line-of-sight verification
@@ -441,7 +440,7 @@ AI-controlled turret placed in the arena:
 - **Visual feedback** — Color changes (green → yellow → red) based on state
 - **Destructible** — Has its own `HealthSystem`
 
-### 🎮 Player Controller
+### Player Controller
 
 Full FPS controller with:
 - **Walk/Sprint** with stamina system (drain/recovery)
@@ -452,26 +451,26 @@ Full FPS controller with:
 - **Camera mounting** on local player's head pivot
 - **Cursor lock/unlock** management
 
-### 🎬 Animation System
+### Animation System
 
 - **Animator-driven** with states: Idle, Walking, Running, Shooting, Drunk, Dead, Jumping
 - **Procedural aim** via `AimRigController` + `MultiAimConstraint` (Animation Rigging)
 - **Drunk aim modifier** dynamically reduces aim rig bone weights
 - **Weapon attachment** via `WeaponAttacher` (parent to right hand bone at runtime)
 
-### 📺 Player HUD
+### Player HUD
 
 Real-time in-game overlay showing:
-- 🎯 **Dynamic crosshair** — Size scales with drunk level
-- ❤️ **Health bar** — Color transitions: green → yellow → red
-- ⚡ **Stamina bar** — Blue with drain/recovery feedback
-- 🍺 **Drunk meter** — Yellow → orange gradient
-- 🔫 **Ammo counter** — `Current / Cylinder` with reload indicator
-- 💀 **Death panel** — Shown on death, hidden on respawn
+- **Dynamic crosshair** — Size scales with drunk level
+- **Health bar** — Color transitions: green → yellow → red
+- **Stamina bar** — Blue with drain/recovery feedback
+- **Drunk meter** — Yellow → orange gradient
+- **Ammo counter** — `Current / Cylinder` with reload indicator
+- **Death panel** — Shown on death, hidden on respawn
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
 > *Add screenshots to `Docs/Images/` and they will render automatically.*
 
@@ -495,30 +494,30 @@ Real-time in-game overlay showing:
 
 ---
 
-## ✨ Features
+## Features
 
-- 🌐 **Online Multiplayer** — Up to 8 players via Photon Fusion 2
-- 🔄 **Real-Time State Synchronization** — Tick-based simulation with server authority
-- 🥃 **Drunk Mechanics** — Risk/reward alcohol system affecting all player abilities
-- 🔫 **FPS Combat** — Hitscan revolver with spread, recoil, and weapon sway
-- 🏟️ **Round-Based Matches** — Configurable round count and win conditions
-- 🍺 **Collectible Bottles** — Whiskey pickups with floating animation and audio
-- 🏗️ **AI Turret Hazard** — Destructible turret with detection, aiming, and hitscan
-- ❤️ **Health & Respawn** — Auto-respawn with drunk-based damage resistance
-- ⚡ **Stamina System** — Sprint management with drain/recovery
-- 🎬 **Procedural Animation** — Animation Rigging with drunk aim degradation
-- 📸 **Camera FX** — Cinemachine noise driven by drunk level
-- 🎵 **Audio System** — Spatial SFX for gunfire, impacts, reload, drinking, ambient wind
-- 📺 **Dynamic HUD** — Health, stamina, drunk, ammo, dynamic crosshair
-- 🏜️ **Western Environment** — Saloons, banks, carriages, rocks, cacti, desert skybox
-- 🎮 **Action-Based Input** — Unity Input System with full FPS mapping
-- 📡 **Lobby System** — Create/join rooms, ready up, kick players, name sync
-- ⏳ **Loading Screen** — Animated loading overlay with auto-hide on scene load
-- 🔄 **Scene Flow** — Automated Bootstrap → Menu → Lobby → Gameplay pipeline
+- **Online Multiplayer** — Up to 8 players via Photon Fusion 2
+- **Real-Time State Synchronization** — Tick-based simulation with server authority
+- **Drunk Mechanics** — Risk/reward alcohol system affecting all player abilities
+- **FPS Combat** — Hitscan revolver with spread, recoil, and weapon sway
+- **Round-Based Matches** — Configurable round count and win conditions
+- **Collectible Bottles** — Whiskey pickups with floating animation and audio
+- **AI Turret Hazard** — Destructible turret with detection, aiming, and hitscan
+- **Health & Respawn** — Auto-respawn with drunk-based damage resistance
+- **Stamina System** — Sprint management with drain/recovery
+- **Procedural Animation** — Animation Rigging with drunk aim degradation
+- **Camera FX** — Cinemachine noise driven by drunk level
+- **Audio System** — Spatial SFX for gunfire, impacts, reload, drinking, ambient wind
+- **Dynamic HUD** — Health, stamina, drunk, ammo, dynamic crosshair
+- **Western Environment** — Saloons, banks, carriages, rocks, cacti, desert skybox
+- **Action-Based Input** — Unity Input System with full FPS mapping
+- **Lobby System** — Create/join rooms, ready up, kick players, name sync
+- **Loading Screen** — Animated loading overlay with auto-hide on scene load
+- **Scene Flow** — Automated Bootstrap → Menu → Lobby → Gameplay pipeline
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -578,7 +577,7 @@ Real-time in-game overlay showing:
 
 ---
 
-## 🧪 Network Configuration
+## Network Configuration
 
 | Parameter | Value | Location |
 |-----------|-------|----------|
@@ -591,7 +590,7 @@ Real-time in-game overlay showing:
 
 ---
 
-## 📐 Design Patterns
+## Design Patterns
 
 | Pattern | Implementation | Purpose |
 |---------|----------------|---------|
@@ -605,7 +604,7 @@ Real-time in-game overlay showing:
 
 ---
 
-## 👥 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/awesome-feature`)
@@ -615,14 +614,8 @@ Real-time in-game overlay showing:
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
 <p align="center">
-  Made with ❤️ and 🥃 by <a href="https://github.com/AngelQuinteroDev">AngelQuinteroDev</a>
+  Made by <a href="https://github.com/AngelQuinteroDev">AngelQuinteroDev</a>
 </p>
 
 <p align="center">
