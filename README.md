@@ -38,7 +38,7 @@ Players compete in round-based matches using revolvers in a dusty Western enviro
 |--------|-------------|
 | **Risk vs. Reward** | Alcohol boosts damage but degrades aim, movement, and reload speed |
 | **Round-Based Combat** | Best-of-N rounds with configurable win conditions |
-| **Online Multiplayer** | Up to 8 players via Photon Fusion 2 with Host/Client model |
+| **Online Multiplayer** | Up to 5 players via Photon Fusion 2 with Host/Client model |
 | **Wild West Theme** | Saloons, banks, carriages, cacti, and desert skyboxes |
 
 ---
@@ -493,7 +493,7 @@ Real-time in-game overlay showing:
 
 ## Features
 
-- **Online Multiplayer** — Up to 8 players via Photon Fusion 2
+- **Online Multiplayer** — Up to 5 players via Photon Fusion 2
 - **Real-Time State Synchronization** — Tick-based simulation with server authority
 - **Drunk Mechanics** — Risk/reward alcohol system affecting all player abilities
 - **FPS Combat** — Hitscan revolver with spread, recoil, and weapon sway
