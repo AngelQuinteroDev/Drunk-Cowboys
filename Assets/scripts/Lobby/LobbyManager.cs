@@ -25,7 +25,7 @@ namespace FPSMultiplayer.Lobby
             EventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
 
             if (HasStateAuthority)
-                SyncPlayersFromRunner();
+                ResetLobbyState();
 
             EventBus.Publish(new LobbyListUpdated());
         }
@@ -110,6 +110,17 @@ namespace FPSMultiplayer.Lobby
                     break;
                 }
             }
+        }
+
+        private void ResetLobbyState()
+        {
+            MatchStarted = false;
+            CountdownTime = 0f;
+
+            for (int i = Players.Count - 1; i >= 0; i--)
+                Players.Remove(Players[i]);
+
+            SyncPlayersFromRunner();
         }
 
         public override void Render()

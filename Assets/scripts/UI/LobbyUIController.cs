@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using FPSMultiplayer.Core;
 using FPSMultiplayer.Lobby;
@@ -35,6 +36,7 @@ namespace FPSMultiplayer.UI
 
         private void OnEnable()
         {
+            EnsureCursorUnlocked();
             EventBus.Subscribe<LobbyListUpdated>(OnLobbyListUpdated);
             ResolveServices();
             RefreshList();
@@ -181,6 +183,15 @@ namespace FPSMultiplayer.UI
             if (_lobbyManager == null) return false;
             var obj = _lobbyManager.Object;
             return obj != null && obj.IsValid;
+        }
+
+        private static void EnsureCursorUnlocked()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
         }
     }
 }

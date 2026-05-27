@@ -117,7 +117,7 @@ namespace FPSMultiplayer.Networking
         public void OnShutdown(NetworkRunner runner, ShutdownReason reason)
         {
             Debug.Log($"[SessionManager] Shutdown: {reason}");
-            EventBus.Publish(new SceneChangeRequest { SceneName = Shared.GameConstants.Scene.MainMenu });
+            ReturnToMainMenu();
         }
 
         public void OnSceneLoadDone(NetworkRunner runner)
@@ -142,7 +142,10 @@ namespace FPSMultiplayer.Networking
 
         public void OnConnectedToServer(NetworkRunner runner) { }
         public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
-            => Debug.Log($"[SessionManager] DisconnectedFromServer: {reason}");
+        {
+            Debug.Log($"[SessionManager] DisconnectedFromServer: {reason}");
+            ReturnToMainMenu();
+        }
         public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason)
             => Debug.Log($"[SessionManager] ConnectFailed: {reason}");
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
@@ -197,6 +200,11 @@ namespace FPSMultiplayer.Networking
 
             sceneRef = SceneRef.FromIndex(active.buildIndex);
             return true;
+        }
+
+        private static void ReturnToMainMenu()
+        {
+            EventBus.Publish(new SceneChangeRequest { SceneName = Shared.GameConstants.Scene.MainMenu });
         }
 
         private static void LogLoadedScenes()
