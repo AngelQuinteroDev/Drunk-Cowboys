@@ -2,10 +2,6 @@ using UnityEngine;
 
 namespace FPSMultiplayer.Infrastructure
 {
-    /// <summary>
-    /// Smooths local camera position after it gets parented to the local player head pivot.
-    /// Keeps rotation immediate to avoid aim/input mismatch.
-    /// </summary>
     public class LocalClientCameraSmoother : MonoBehaviour
     {
         [SerializeField] private bool enableSmoothing = true;
@@ -23,9 +19,6 @@ namespace FPSMultiplayer.Infrastructure
 
             if (!TryResolveMainCamera())
                 return;
-
-            // PlayerController parents Camera.main to headPivot on local spawn.
-            // We detach once and then smooth-follow that pivot in world space.
             if (_mainCamera.transform.parent != null)
             {
                 _followTarget = _mainCamera.transform.parent;
@@ -45,7 +38,6 @@ namespace FPSMultiplayer.Infrastructure
                 Time.unscaledDeltaTime
             );
 
-            // Keep camera rotation exact to preserve shooting direction responsiveness.
             _mainCamera.transform.rotation = _followTarget.rotation;
         }
 
